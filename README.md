@@ -1,19 +1,29 @@
-# SPANNER-GOTCHI (Drone Pet Web Frontend)
+# 🛸 SPANNER-GOTCHI | Drone Pet OS v3.1
 
-Web application for monitoring drone configuration, status, and logging temperature readings via the Drone API Server.
+เว็บแอปพลิเคชันสำหรับติดตามสถานะและบันทึกข้อมูลอุณหภูมิของโดรน (Drone ID: `67010177`) ในรูปแบบจำลองหน้าจอคอมพิวเตอร์ **Desktop OS Dual-Window** เชื่อมต่อข้อมูลผ่าน RESTful API Server
 
-## Tech Stack
-- HTML, CSS, JavaScript (Vite)
-- Custom API Integration (`drone-api-server`)
+- **Live Web App (Render):** `https://drone-tamagotchi-web.onrender.com` *(เปลี่ยนเป็นลิงก์จริงของคุณ)*
+- **Backend API Server:** `https://drone-api-spanner.onrender.com`
 
-## Features
-1. **View Config:** Displays Drone ID, Drone Name, Light status, Country, and Condition.
-2. **Log Temp:** Form to submit current temperature (Celsius) via `POST /logs`.
-3. **View Logs:** Displays temperature logs sorted by newest first (12 items per page) with pagination support.
+---
 
-## Environment Variables
-Create a `.env` file in the root directory before running locally:
+## ✨ ฟีเจอร์หลักตามโจทย์ (Core Features)
+1. **View Config:** แสดงข้อมูลจำเพาะของโดรน (`drone_id`, `drone_name`, `light`, `country`) จาก `GET /configs/:droneId`
+2. **Log Temp:** ฟอร์มบันทึกค่าอุณหภูมิ (`celsius`) ส่งไปยัง `POST /logs` โดยดึงข้อมูลชื่อโดรนและประเทศมาประกอบอัตโนมัติ
+3. **View Logs:** ตารางแสดงประวัติการบันทึกอุณหภูมิเรียงจากล่าสุด พร้อมระบบแบ่งหน้า (Pagination) หน้าละ 12 รายการ จาก `GET /logs/:droneId?page=`
 
-```env
-VITE_API_URL=[https://drone-api-spanner.onrender.com](https://drone-api-spanner.onrender.com)
-VITE_DRONE_ID=67010177
+## 🚀 ลูกเล่นเพิ่มเติม (Interactive OS Features)
+- **Desktop OS Dual-Window UI:** แบ่งหน้าจอการทำงานเป็น 2 หน้าต่างคู่กัน (`SPANNER_MONITOR.EXE` และ `CONTROL_TERMINAL.APP`) พร้อมแถบ Menubar ด้านบน, เมนู `Start` และ Taskbar สำหรับย่อ/ขยายหน้าต่างได้จริง
+- **Dynamic Mood & Shutdown/Revival System:** เปลี่ยนสีหน้าจอและอารมณ์ของ Spanner ตามอุณหภูมิล่าสุด (`<= 10°C` เครื่องแข็งตัวดับ, `11–19°C` หนาว, `20–34°C` ปกติ, `35–39°C` ร้อน, `>= 40°C` เครื่องฮีตดับ) พร้อมระบบกู้ชีพด้วยการป้อนอุณหภูมิปกติหรือกดปุ่ม `Reboot`
+- **Temperature Sparkline Chart:** กราฟเส้น SVG แสดงแนวโน้มอุณหภูมิสูงสุด-ต่ำสุดในหน้าประวัติ
+- **Quick Preset Buttons:** ปุ่มลัดเลือกอุณหภูมิสำหรับทดสอบ (`8°C`, `25°C`, `37°C`, `42°C`)
+- **8-Bit Web Audio SFX & Night Radar Mode:** ระบบเสียงเอฟเฟกต์สไตล์เครื่องเกมย้อนยุค (เปิด/ปิดได้) และโหมดเรดาร์กลางคืน
+- **CSV Export:** ดาวน์โหลดประวัติอุณหภูมิในหน้าปัจจุบันออกมาเป็นไฟล์ `.csv` ผ่านเมนู `File`
+
+---
+
+## 🛠️ การติดตั้งและรันในเครื่อง (Local Setup)
+
+1. ติดตั้ง Dependencies:
+   ```bash
+   npm install
