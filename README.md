@@ -2,7 +2,7 @@
 
 เว็บแอปพลิเคชันสำหรับติดตามสถานะและบันทึกข้อมูลอุณหภูมิของโดรน (Drone ID: `67010177`) ในรูปแบบจำลองหน้าจอคอมพิวเตอร์ **Desktop OS Dual-Window** เชื่อมต่อข้อมูลผ่าน RESTful API Server
 
-- **Live Web App (Render):** `https://drone-tamagotchi-web.onrender.com` *(เปลี่ยนเป็นลิงก์จริงของคุณ)*
+- **Live Web App (Render):** `https://drone-tamagotchi-web.onrender.com`
 - **Backend API Server:** `https://drone-api-spanner.onrender.com`
 
 ---
