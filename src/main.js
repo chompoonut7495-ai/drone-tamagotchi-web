@@ -1,176 +1,519 @@
 import './style.css';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = (
+  import.meta.env.VITE_API_URL || 'https://drone-api-spanner.onrender.com'
+).replace(/\/$/, '');
 const DRONE_ID = import.meta.env.VITE_DRONE_ID || '67010177';
 
-let droneConfig = null;
-let currentPage = 1;
+// สถานะหลักของแอปพลิเคชัน
+const state = {
+  activeTab: 'config', // 'config' | 'log' | 'history'
+  config: null,
+  status: null,
+  logs: [],
+  latestTemp: null,
+  page: 1,
+  isLoading: true,
+  isWakingUp: false,
+  isSubmitting: false,
+  feedback: null, // { type: 'success' | 'error', text: string }
+  isRadar: false,
+  isMuted: false,
+};
 
-// สลับหน้า Tab ทั้ง 3 หน้า
-document.querySelectorAll('.nav-btn').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.nav-btn').forEach((b) => b.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach((p) => p.classList.remove('active'));
-
-    btn.classList.add('active');
-    document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
-  });
-});
-
-// อัปเดตท่าทางของน้อง Tamagotchi
-function updateTamagotchiMood(condition, latestTemp = null) {
-  const avatar = document.getElementById('pet-avatar');
-  const speech = document.getElementById('pet-speech');
-
-  if (latestTemp !== null) {
-    document.getElementById('pet-temp').textContent = `${latestTemp} °C`;
-    if (latestTemp > 35) {
-      avatar.textContent = '🥵🛸';
-      speech.textContent = `ร้อนจัง! (${latestTemp}°C) ขอพักระบายความร้อนหน่อย`;
-      return;
+// ระบบสังเคราะห์เสียง 8-Bit (ไม่ต้องใช้ไฟล์ MP3 ภายนอก)
+let audioCtx = null;
+function playBeep(type = 'click') {
+  if (state.isMuted) return;
+  try {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
-    if (latestTemp < 20) {
-      avatar.textContent = '🥶🛸';
-      speech.textContent = `หนาวบรื๋อ! (${latestTemp}°C) เปิดฮีตเตอร์ด่วน`;
-      return;
-    }
-  }
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
 
-  if (String(condition).toLowerCase() === 'good') {
-    avatar.textContent = '🛸✨';
-    speech.textContent = `สวัสดี! ผมชื่อ ${droneConfig?.drone_name || 'Spanner'} พร้อมบินครับ!`;
-  } else {
-    avatar.textContent = '🔧🛸';
-    speech.textContent = `สถานะตอนนี้: ${condition}`;
+    if (type === 'click') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(520, now);
+      gain.gain.setValueAtTime(0.04, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+      osc.start(now);
+      osc.stop(now + 0.06);
+    } else if (type === 'preset') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(660, now);
+      osc.frequency.setValueAtTime(880, now + 0.04);
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+      osc.start(now);
+      osc.stop(now + 0.09);
+    } else if (type === 'success') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(523.25, now);
+      osc.frequency.setValueAtTime(659.25, now + 0.08);
+      osc.frequency.setValueAtTime(783.99, now + 0.16);
+      osc.frequency.setValueAtTime(1046.5, now + 0.24);
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
+      osc.start(now);
+      osc.stop(now + 0.36);
+    } else if (type === 'error') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.setValueAtTime(165, now + 0.12);
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+      osc.start(now);
+      osc.stop(now + 0.26);
+    }
+  } catch {
+    // ข้ามหากเบราว์เซอร์บล็อกเสียงอัตโนมัติ
   }
 }
 
-// 1. โหลดข้อมูล Config และ Status ของโดรน
-async function loadDroneProfile() {
-  try {
-    document.getElementById('pet-speech').textContent =
-      'กำลังปลุกเซิร์ฟเวอร์ (ครั้งแรกอาจรอ ~20 วิ)...';
+// คำนวณอารมณ์และคำพูดของ Spanner ตามอุณหภูมิล่าสุด
+function getPetMood() {
+  const name = state.config?.drone_name || 'Spanner';
+  if (state.isLoading) {
+    return {
+      moodClass: '',
+      avatar: '🛸💤',
+      speech: state.isWakingUp
+        ? 'กำลังปลุกเซิร์ฟเวอร์และอุ่นเครื่องยนต์ รอสักครู่นะครับ...'
+        : 'กำลังเชื่อมต่อสัญญาณดาวเทียม...',
+    };
+  }
 
+  const t = state.latestTemp;
+  if (t === null || Number.isNaN(Number(t))) {
+    return {
+      moodClass: '',
+      avatar: '🛸✨',
+      speech: `สวัสดี! ผมชื่อ ${name} พร้อมบินครับ!`,
+    };
+  }
+
+  if (t >= 35) {
+    return {
+      moodClass: 'mood-hot',
+      avatar: '🛸🥵',
+      speech: `ร้อนจี๋เลย (${t}°C)! เครื่องยนต์เริ่มร้อนแล้วครับ!`,
+    };
+  }
+
+  if (t < 20) {
+    return {
+      moodClass: 'mood-cool',
+      avatar: '🛸🥶',
+      speech: `บรื๋ออ~ อากาศเย็นจัง (${t}°C) เปิดฮีตเตอร์หน่อยครับ!`,
+    };
+  }
+
+  return {
+    moodClass: '',
+    avatar: '🛸✨',
+    speech: `สวัสดี! ผมชื่อ ${name} อากาศกำลังดี (${t}°C) พร้อมบินครับ!`,
+  };
+}
+
+// วาดกราฟเส้น SVG Sparkline จากข้อมูล 12 รายการล่าสุด
+function renderSparkline(logs) {
+  if (!logs || logs.length < 2) return '';
+
+  // เรียงจากเก่า -> ใหม่ (ซ้ายไปขวา) เพื่อให้กราฟอ่านตามลำดับเวลา
+  const ordered = [...logs].reverse();
+  const temps = ordered.map((item) => Number(item.celsius));
+  const min = Math.min(...temps);
+  const max = Math.max(...temps);
+  const range = max - min || 1;
+
+  const width = 440;
+  const height = 58;
+  const padX = 10;
+  const padY = 10;
+
+  const points = temps.map((val, idx) => {
+    const x = padX + (idx / (temps.length - 1)) * (width - padX * 2);
+    const y = height - padY - ((val - min) / range) * (height - padY * 2);
+    return { x: x.toFixed(1), y: y.toFixed(1), val };
+  });
+
+  const polyline = points.map((p) => `${p.x},${p.y}`).join(' ');
+  const strokeColor = state.isRadar ? '#39ff14' : '#e76f51';
+
+  return `
+    <div class="sparkline-box">
+      <div class="sparkline-header">
+        <span>📈 แนวโน้มอุณหภูมิ (${temps.length} รายการในหน้านี้)</span>
+        <span>Min: ${min}°C | Max: ${max}°C</span>
+      </div>
+      <svg viewBox="0 0 ${width} ${height}" width="100%" height="58" preserveAspectRatio="none">
+        <polyline
+          fill="none"
+          stroke="${strokeColor}"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          points="${polyline}"
+        />
+        ${points
+          .map(
+            (p) =>
+              `<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="${strokeColor}" />`
+          )
+          .join('')}
+      </svg>
+    </div>
+  `;
+}
+
+function formatDateTime(isoStr) {
+  if (!isoStr) return '-';
+  const d = new Date(isoStr);
+  if (Number.isNaN(d.getTime())) return isoStr;
+  return d.toLocaleString('th-TH', {
+    year: '2-digit',
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+// ดึงข้อมูล Log ตามหน้า (Pagination)
+async function fetchLogs(page = 1) {
+  try {
+    const res = await fetch(`${API_URL}/logs/${DRONE_ID}?page=${page}`);
+    if (!res.ok) throw new Error('Failed to load logs');
+    const data = await res.json();
+    state.logs = Array.isArray(data) ? data : [];
+    state.page = page;
+    if (page === 1 && state.logs.length > 0) {
+      state.latestTemp = Number(state.logs[0].celsius);
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// โหลดข้อมูลเริ่มต้นทั้งหมดเมื่อเปิดเว็บ
+async function initApp() {
+  const wakeTimer = setTimeout(() => {
+    if (state.isLoading) {
+      state.isWakingUp = true;
+      render();
+    }
+  }, 2000);
+
+  try {
     const [cfgRes, statusRes] = await Promise.all([
       fetch(`${API_URL}/configs/${DRONE_ID}`),
       fetch(`${API_URL}/status/${DRONE_ID}`),
     ]);
 
-    if (!cfgRes.ok || !statusRes.ok) throw new Error('API Error');
-
-    droneConfig = await cfgRes.json();
-    const statusData = await statusRes.json();
-
-    document.getElementById('drone-id-badge').textContent = `ID: #${droneConfig.drone_id}`;
-    document.getElementById('light-badge').textContent = `LIGHT: ${String(droneConfig.light).toUpperCase()}`;
-    document.getElementById('pet-condition').textContent = statusData.condition;
-
-    document.getElementById('cfg-id').textContent = droneConfig.drone_id;
-    document.getElementById('cfg-name').textContent = droneConfig.drone_name;
-    document.getElementById('cfg-light').textContent = droneConfig.light;
-    document.getElementById('cfg-country').textContent = droneConfig.country;
-    document.getElementById('cfg-weight').textContent = `${droneConfig.weight} kg`;
-
-    updateTamagotchiMood(statusData.condition);
+    if (cfgRes.ok) state.config = await cfgRes.json();
+    if (statusRes.ok) state.status = await statusRes.json();
+    await fetchLogs(1);
   } catch (err) {
-    document.getElementById('pet-avatar').textContent = '😵';
-    document.getElementById('pet-speech').textContent = 'ติดต่อเซิร์ฟเวอร์ไม่ได้ ลองรีเฟรชใหม่นะ';
+    console.error('Init error:', err);
+  } finally {
+    clearTimeout(wakeTimer);
+    state.isLoading = false;
+    state.isWakingUp = false;
+    render();
   }
 }
 
-// 2. โหลดรายการ Logs พร้อม Pagination
-async function loadLogs(page = 1) {
-  const tbody = document.getElementById('logs-tbody');
-  tbody.innerHTML = '<tr><td colspan="5" class="center">กำลังโหลดข้อมูล...</td></tr>';
-
-  try {
-    const res = await fetch(`${API_URL}/logs/${DRONE_ID}?page=${page}`);
-    if (!res.ok) throw new Error('Failed to load logs');
-
-    const logs = await res.json();
-    currentPage = page;
-    document.getElementById('page-indicator').textContent = `Page ${currentPage}`;
-    document.getElementById('prev-page-btn').disabled = currentPage <= 1;
-    document.getElementById('next-page-btn').disabled = logs.length < 12;
-
-    if (logs.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="center">ยังไม่มีข้อมูล Log</td></tr>';
-      return;
-    }
-
-    // อัปเดตอุณหภูมิล่าสุดบนหน้าจอ Tamagotchi
-    if (page === 1 && logs[0]) {
-      const cond = document.getElementById('pet-condition').textContent;
-      updateTamagotchiMood(cond, logs[0].celsius);
-    }
-
-    tbody.innerHTML = logs
-      .map(
-        (item) => `
-        <tr>
-          <td>${new Date(item.created).toLocaleString('th-TH')}</td>
-          <td>${item.country}</td>
-          <td>${item.drone_id}</td>
-          <td>${item.drone_name}</td>
-          <td><strong>${item.celsius} °C</strong></td>
-        </tr>
-      `
-      )
-      .join('');
-  } catch (err) {
-    tbody.innerHTML = '<tr><td colspan="5" class="center">โหลดข้อมูลไม่สำเร็จ</td></tr>';
+// ส่งข้อมูลบันทึกอุณหภูมิ (POST /logs)
+async function submitTemperature(celsiusValue) {
+  const celsius = Number(celsiusValue);
+  if (celsiusValue === '' || Number.isNaN(celsius)) {
+    playBeep('error');
+    state.feedback = { type: 'error', text: 'กรุณากรอกตัวเลขอุณหภูมิให้ถูกต้อง' };
+    render();
+    return;
   }
-}
 
-// 3. ส่งข้อมูลบันทึกอุณหภูมิใหม่ (POST /logs)
-document.getElementById('temp-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  if (!droneConfig) return;
-
-  const input = document.getElementById('celsius-input');
-  const submitBtn = document.getElementById('submit-btn');
-  const feedback = document.getElementById('form-feedback');
-  const celsiusVal = Number(input.value);
-
-  submitBtn.disabled = true;
-  feedback.style.color = '#333';
-  feedback.textContent = 'กำลังส่งข้อมูลให้น้อง Spanner...';
+  state.isSubmitting = true;
+  state.feedback = null;
+  render();
 
   try {
+    const payload = {
+      drone_id: Number(state.config?.drone_id || DRONE_ID),
+      drone_name: state.config?.drone_name || 'Spanner',
+      country: state.config?.country || 'Thailand',
+      celsius: celsius,
+    };
+
     const res = await fetch(`${API_URL}/logs`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        drone_id: droneConfig.drone_id,
-        drone_name: droneConfig.drone_name,
-        country: droneConfig.country,
-        celsius: celsiusVal,
-      }),
+      body: JSON.stringify(payload),
     });
 
-    if (!res.ok) throw new Error('POST failed');
+    if (!res.ok) throw new Error('Failed to create log');
 
-    input.value = '';
-    feedback.style.color = '#2a9d8f';
-    feedback.textContent = `บันทึกอุณหภูมิ ${celsiusVal} °C เรียบร้อยแล้ว!`;
-
-    await loadLogs(1);
+    playBeep('success');
+    state.latestTemp = celsius;
+    state.feedback = {
+      type: 'success',
+      text: `บันทึกอุณหภูมิ ${celsius}°C สำเร็จเรียบร้อย!`,
+    };
+    await fetchLogs(1);
   } catch (err) {
-    feedback.style.color = '#e63946';
-    feedback.textContent = 'เกิดข้อผิดพลาดในการบันทึกข้อมูล';
+    playBeep('error');
+    state.feedback = {
+      type: 'error',
+      text: 'เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง',
+    };
   } finally {
-    submitBtn.disabled = false;
+    state.isSubmitting = false;
+    render();
   }
-});
+}
 
-// ปุ่มเปลี่ยนหน้า Pagination
-document.getElementById('prev-page-btn').addEventListener('click', () => {
-  if (currentPage > 1) loadLogs(currentPage - 1);
-});
+// วาดส่วนเนื้อหาตามแท็บที่เลือก
+function renderActivePanel() {
+  if (state.activeTab === 'config') {
+    const c = state.config || {};
+    return `
+      <div class="panel-title">
+        <span>🖥️ ข้อมูลจำเพาะโดรน (Config)</span>
+      </div>
+      <div class="config-grid">
+        <div class="config-item">
+          <div class="config-label">Drone ID</div>
+          <div class="config-value">#${c.drone_id || DRONE_ID}</div>
+        </div>
+        <div class="config-item">
+          <div class="config-label">Drone Name</div>
+          <div class="config-value">${c.drone_name || '-'}</div>
+        </div>
+        <div class="config-item">
+          <div class="config-label">Light</div>
+          <div class="config-value">${(c.light || '-').toUpperCase()}</div>
+        </div>
+        <div class="config-item">
+          <div class="config-label">Country</div>
+          <div class="config-value">${c.country || '-'}</div>
+        </div>
+      </div>
+    `;
+  }
 
-document.getElementById('next-page-btn').addEventListener('click', () => {
-  loadLogs(currentPage + 1);
-});
+  if (state.activeTab === 'log') {
+    return `
+      <div class="panel-title">
+        <span>🌡️ Feed Temperature (°C)</span>
+      </div>
+      <form id="tempForm">
+        <div class="form-group">
+          <label class="form-label" for="celsiusInput">กรอกอุณหภูมิปัจจุบัน (Celsius)</label>
+          <input
+            id="celsiusInput"
+            class="temp-input"
+            type="number"
+            step="0.1"
+            placeholder="เช่น 25"
+            required
+          />
+        </div>
+        <div class="preset-row">
+          <button type="button" class="preset-btn" data-temp="18">❄️ 18°C (เย็น)</button>
+          <button type="button" class="preset-btn" data-temp="25">🌤️ 25°C (ปกติ)</button>
+          <button type="button" class="preset-btn" data-temp="38">🔥 38°C (ร้อนจัด)</button>
+        </div>
+        <button type="submit" class="submit-btn" ${state.isSubmitting ? 'disabled' : ''}>
+          ${state.isSubmitting ? 'กำลังส่งข้อมูล...' : 'บันทึกอุณหภูมิ (Submit Data)'}
+        </button>
+        ${
+          state.feedback
+            ? `<div class="feedback-msg ${state.feedback.type}">${state.feedback.text}</div>`
+            : ''
+        }
+      </form>
+    `;
+  }
 
-// เริ่มทำงานเมื่อเปิดหน้าเว็บ
-loadDroneProfile().then(() => loadLogs(1));
+  // แท็บ View Logs
+  return `
+    <div class="panel-title">
+      <span>📜 ประวัติอุณหภูมิ (View Logs)</span>
+      <span style="font-size:0.8rem; opacity:0.75;">หน้า ${state.page}</span>
+    </div>
+    ${renderSparkline(state.logs)}
+    <div class="table-wrap">
+      <table class="logs-table">
+        <thead>
+          <tr>
+            <th>Created</th>
+            <th>Country</th>
+            <th>Drone ID</th>
+            <th>Drone Name</th>
+            <th>Celsius</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${
+            state.logs.length === 0
+              ? `<tr><td colspan="5" style="text-align:center; padding:16px;">ยังไม่มีประวัติข้อมูลในหน้านี้</td></tr>`
+              : state.logs
+                  .map(
+                    (row) => `
+                  <tr>
+                    <td>${formatDateTime(row.created)}</td>
+                    <td>${row.country}</td>
+                    <td>${row.drone_id}</td>
+                    <td>${row.drone_name}</td>
+                    <td><strong>${row.celsius}°C</strong></td>
+                  </tr>
+                `
+                  )
+                  .join('')
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination-bar">
+      <button id="prevPageBtn" class="page-btn" ${state.page <= 1 ? 'disabled' : ''}>
+        ◀ ก่อนหน้า
+      </button>
+      <span>แสดงสูงสุด 12 รายการ/หน้า</span>
+      <button id="nextPageBtn" class="page-btn" ${state.logs.length < 12 ? 'disabled' : ''}>
+        ถัดไป ▶
+      </button>
+    </div>
+  `;
+}
+
+// Render หน้าจอทั้งหมดและผูก Event Listeners
+function render() {
+  const app = document.getElementById('app');
+  const pet = getPetMood();
+  const lightStatus = (state.config?.light || 'off').toUpperCase();
+  const conditionStatus = state.status?.condition || 'checking...';
+  const tempDisplay =
+    state.latestTemp !== null ? `${state.latestTemp} °C` : '-- °C';
+
+  app.innerHTML = `
+    <div class="device-shell ${state.isRadar ? 'radar-mode' : ''}">
+      <div class="shell-top">
+        <span class="os-badge">DRONE PET OS v2.5</span>
+        <div class="hardware-toggles">
+          <button id="toggleSoundBtn" class="hw-btn" title="เปิด/ปิดเสียง 8-Bit">
+            ${state.isMuted ? '🔇 Muted' : '🔊 SFX'}
+          </button>
+          <button id="toggleRadarBtn" class="hw-btn" title="สลับโหมดเรดาร์กลางคืน">
+            ${state.isRadar ? '☀️ Day' : '📡 Radar'}
+          </button>
+        </div>
+      </div>
+
+      <h1 class="device-title">SPANNER-GOTCHI</h1>
+
+      <div class="lcd-screen ${pet.moodClass}">
+        <div class="lcd-header">
+          <span>ID: #${state.config?.drone_id || DRONE_ID}</span>
+          <span class="pill-tag">LIGHT: ${lightStatus}</span>
+        </div>
+
+        <div class="lcd-stage">
+          <div class="pet-avatar">${pet.avatar}</div>
+          <div class="speech-bubble">${pet.speech}</div>
+        </div>
+
+        <div class="lcd-footer">
+          <span>Condition: <strong>${conditionStatus}</strong></span>
+          <span>Temp: <strong>${tempDisplay}</strong></span>
+        </div>
+      </div>
+
+      <div class="nav-tabs">
+        <button class="tab-btn ${state.activeTab === 'config' ? 'active' : ''}" data-tab="config">
+          🖥️ View Config
+        </button>
+        <button class="tab-btn ${state.activeTab === 'log' ? 'active' : ''}" data-tab="log">
+          🌡️ Log Temp
+        </button>
+        <button class="tab-btn ${state.activeTab === 'history' ? 'active' : ''}" data-tab="history">
+          📜 View Logs
+        </button>
+      </div>
+
+      <div class="panel-card">
+        ${renderActivePanel()}
+      </div>
+    </div>
+  `;
+
+  // ผูก Event ปุ่มเปิด/ปิดเสียง
+  document.getElementById('toggleSoundBtn')?.addEventListener('click', () => {
+    state.isMuted = !state.isMuted;
+    if (!state.isMuted) playBeep('click');
+    render();
+  });
+
+  // ผูก Event ปุ่มสลับโหมดเรดาร์กลางคืน
+  document.getElementById('toggleRadarBtn')?.addEventListener('click', () => {
+    state.isRadar = !state.isRadar;
+    playBeep('click');
+    render();
+  });
+
+  // ผูก Event ปุ่มแท็บทั้ง 3
+  document.querySelectorAll('.tab-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      playBeep('click');
+      state.activeTab = btn.dataset.tab;
+      state.feedback = null;
+      render();
+      if (state.activeTab === 'history') {
+        await fetchLogs(state.page);
+        render();
+      }
+    });
+  });
+
+  // ผูก Event ฟอร์มบันทึกอุณหภูมิและปุ่มลัด
+  const form = document.getElementById('tempForm');
+  if (form) {
+    document.querySelectorAll('.preset-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        playBeep('preset');
+        const input = document.getElementById('celsiusInput');
+        if (input) input.value = btn.dataset.temp;
+      });
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const val = document.getElementById('celsiusInput')?.value;
+      submitTemperature(val);
+    });
+  }
+
+  // ผูก Event ปุ่มเปลี่ยนหน้า Pagination
+  document.getElementById('prevPageBtn')?.addEventListener('click', async () => {
+    if (state.page > 1) {
+      playBeep('click');
+      await fetchLogs(state.page - 1);
+      render();
+    }
+  });
+
+  document.getElementById('nextPageBtn')?.addEventListener('click', async () => {
+    if (state.logs.length >= 12) {
+      playBeep('click');
+      await fetchLogs(state.page + 1);
+      render();
+    }
+  });
+}
+
+// เริ่มทำงาน
+render();
+initApp();

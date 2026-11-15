@@ -3,119 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Spanner Drone Tamagotchi</title>
+    <title>SPANNER-GOTCHI | Drone Pet OS v2.5</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
-    <main class="tama-shell">
-      <header class="tama-header">
-        <span class="badge">DRONE PET OS v2.0</span>
-        <h1>SPANNER-GOTCHI</h1>
-      </header>
-
-      <!-- หน้าจอแสดงผลหลักแบบ Tamagotchi -->
-      <section class="tama-screen">
-        <div class="status-bar">
-          <span id="drone-id-badge">ID: #67010177</span>
-          <span id="light-badge" class="pill">LIGHT: ...</span>
-        </div>
-
-        <div class="pet-stage">
-          <div id="pet-avatar" class="pet-avatar">🛸</div>
-          <div id="pet-speech" class="pet-speech">กำลังปลุกน้อง Spanner...</div>
-        </div>
-
-        <div class="pet-vitals">
-          <div>Condition: <strong id="pet-condition">...</strong></div>
-          <div>Temp: <strong id="pet-temp">-- °C</strong></div>
-        </div>
-      </section>
-
-      <!-- ปุ่มเมนู 3 หน้าหลักตามโจทย์ -->
-      <nav class="tama-nav">
-        <button class="nav-btn active" data-tab="config">📟 View Config</button>
-        <button class="nav-btn" data-tab="form">🌡️ Log Temp</button>
-        <button class="nav-btn" data-tab="logs">📜 View Logs</button>
-      </nav>
-
-      <!-- หน้า 1: View Config -->
-      <section id="tab-config" class="tab-panel active">
-        <h2>Drone Configuration</h2>
-        <div class="config-grid">
-          <div class="config-item">
-            <span>Drone ID</span>
-            <strong id="cfg-id">-</strong>
-          </div>
-          <div class="config-item">
-            <span>Drone Name</span>
-            <strong id="cfg-name">-</strong>
-          </div>
-          <div class="config-item">
-            <span>Light Status</span>
-            <strong id="cfg-light">-</strong>
-          </div>
-          <div class="config-item">
-            <span>Country</span>
-            <strong id="cfg-country">-</strong>
-          </div>
-          <div class="config-item full">
-            <span>Weight</span>
-            <strong id="cfg-weight">-</strong>
-          </div>
-        </div>
-      </section>
-
-      <!-- หน้า 2: Temperature Log Form -->
-      <section id="tab-form" class="tab-panel">
-        <h2>Feed Temperature (°C)</h2>
-        <form id="temp-form" class="temp-form">
-          <label for="celsius-input">กรอกอุณหภูมิปัจจุบัน (Celsius)</label>
-          <input
-            type="number"
-            id="celsius-input"
-            step="0.1"
-            placeholder="เช่น 28.5"
-            required
-          />
-          <button type="submit" id="submit-btn" class="primary-btn">
-            บันทึกอุณหภูมิ (Submit Data)
-          </button>
-          <p id="form-feedback" class="feedback"></p>
-        </form>
-      </section>
-
-      <!-- หน้า 3: View Logs -->
-      <section id="tab-logs" class="tab-panel">
-        <div class="logs-header">
-          <h2>Temperature Logs</h2>
-          <span id="page-indicator">Page 1</span>
-        </div>
-
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Created</th>
-                <th>Country</th>
-                <th>Drone ID</th>
-                <th>Drone Name</th>
-                <th>Celsius</th>
-              </tr>
-            </thead>
-            <tbody id="logs-tbody">
-              <tr>
-                <td colspan="5" class="center">กำลังโหลดข้อมูล...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="pagination">
-          <button id="prev-page-btn" disabled>◀ ก่อนหน้า</button>
-          <button id="next-page-btn">ถัดไป ▶</button>
-        </div>
-      </section>
-    </main>
-
+    <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
