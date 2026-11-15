@@ -139,7 +139,7 @@ function getPetMood() {
       isDead: false,
       avatar: '🛸💤',
       speech: state.isWakingUp
-        ? 'กำลังปลุกเซิร์ฟเวอร์และอุ่นเครื่องยนต์ รอสักครู่นะครับ...'
+        ? 'กำลังปลุกเซิร์ฟเวอร์และอุ่นเครื่องยนต์<br>รอสักครู่นะครับ...'
         : 'กำลังเชื่อมต่อสัญญาณดาวเทียม...',
     };
   }
@@ -149,7 +149,7 @@ function getPetMood() {
       moodClass: '',
       isDead: false,
       avatar: '🛸✨',
-      speech: `รีบูตระบบฉุกเฉินสำเร็จ! \nอย่าลืมกด 🌡️ Log Temp ป้อนค่า 25°C เพื่อกู้ชีพถาวรนะครับ`,
+      speech: `รีบูตระบบฉุกเฉินสำเร็จ!<br>กด 🌡️ Log Temp ป้อนค่า 25°C เพื่อกู้ชีพถาวรนะครับ`,
     };
   }
 
@@ -159,7 +159,7 @@ function getPetMood() {
       moodClass: '',
       isDead: false,
       avatar: '🛸✨',
-      speech: `สวัสดี! ผมชื่อ ${name} \nเช็กสเปกด้านขวา แล้วกด 🌡️ Log Temp ป้อนอุณหภูมิให้ผมได้เลย!`,
+      speech: `สวัสดี! ผมชื่อ ${name} เช็กสเปกด้านขวา<br>กด 🌡️ Log Temp ป้อนอุณหภูมิให้ผมได้เลย!`,
     };
   }
 
@@ -168,7 +168,7 @@ function getPetMood() {
       moodClass: 'mood-dead',
       isDead: true,
       avatar: '🛸💀',
-      speech: `OVERHEAT SHUTDOWN (${t}°C)! เครื่องฮีตจนดับ! \nกด 🌡️ Log Temp ป้อนค่า 25°C เพื่อกู้ชีพ`,
+      speech: `OVERHEAT SHUTDOWN (${t}°C)! เครื่องฮีตจนดับ!<br>กด 🌡️ Log Temp ป้อนค่า 25°C เพื่อกู้ชีพ`,
     };
   }
 
@@ -177,7 +177,7 @@ function getPetMood() {
       moodClass: 'mood-dead',
       isDead: true,
       avatar: '🛸🧊',
-      speech: `CRYO FREEZE (${t}°C)! เครื่องแข็งตัวจนดับ! กด 🌡️ Log Temp ป้อนค่า 25°C เพื่อกู้ชีพ`,
+      speech: `CRYO FREEZE (${t}°C)! เครื่องแข็งตัวจนดับ!<br>กด 🌡️ Log Temp ป้อนค่า 25°C เพื่อกู้ชีพ`,
     };
   }
 
@@ -186,7 +186,7 @@ function getPetMood() {
       moodClass: 'mood-hot',
       isDead: false,
       avatar: '🛸🥵',
-      speech: `ร้อนจี๋เลย (${t}°C)! \nกด 🌡️ Log Temp ป้อนอากาศเย็นๆ ให้ผมหน่อยครับ!`,
+      speech: `ร้อนจี๋เลย (${t}°C)!<br>กด 🌡️ Log Temp ป้อนอากาศเย็นๆ ให้ผมหน่อยครับ!`,
     };
   }
 
@@ -195,7 +195,7 @@ function getPetMood() {
       moodClass: 'mood-cool',
       isDead: false,
       avatar: '🛸🥶',
-      speech: `บรื๋ออ~ อากาศเย็นจัง (${t}°C) กด 🌡️ Log Temp ป้อนอุณหภูมิอุ่นๆ หน่อยครับ!`,
+      speech: `บรื๋ออ~ อากาศเย็นจัง (${t}°C)<br>กด 🌡️ Log Temp ป้อนอุณหภูมิอุ่นๆ หน่อยครับ!`,
     };
   }
 
@@ -203,7 +203,7 @@ function getPetMood() {
     moodClass: '',
     isDead: false,
     avatar: '🛸✨',
-    speech: `สวัสดี! ผมชื่อ ${name} (${t}°C) \nเช็กสเปกด้านขวา แล้วกด 🌡️ Log Temp ป้อนอุณหภูมิให้ผมได้เลย!`,
+    speech: `สวัสดี! ผมชื่อ ${name} (${t}°C)<br>กด 🌡️ Log Temp ป้อนอุณหภูมิให้ผมได้เลย!`,
   };
 }
 
