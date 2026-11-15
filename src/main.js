@@ -74,7 +74,7 @@ function playBeep(type = 'click') {
   }
 }
 
-// คำนวณอารมณ์และคำพูดของ Spanner ตามอุณหภูมิล่าสุด
+// คำนวณอารมณ์และคำพูดแนะนำวิธีเล่นของ Spanner ตามอุณหภูมิล่าสุด
 function getPetMood() {
   const name = state.config?.drone_name || 'Spanner';
   if (state.isLoading) {
@@ -92,7 +92,7 @@ function getPetMood() {
     return {
       moodClass: '',
       avatar: '🛸✨',
-      speech: `สวัสดี! ผมชื่อ ${name} พร้อมบินครับ!`,
+      speech: `สวัสดี! ผมชื่อ ${name} เช็กสเปกด้านล่าง แล้วกด 🌡️ Log Temp ป้อนอุณหภูมิให้ผมได้เลย!`,
     };
   }
 
@@ -100,7 +100,7 @@ function getPetMood() {
     return {
       moodClass: 'mood-hot',
       avatar: '🛸🥵',
-      speech: `ร้อนจี๋เลย (${t}°C)! เครื่องยนต์เริ่มร้อนแล้วครับ!`,
+      speech: `ร้อนจี๋เลย (${t}°C)! กด 🌡️ Log Temp ป้อนอากาศเย็นๆ ให้ผมหน่อยครับ!`,
     };
   }
 
@@ -108,14 +108,14 @@ function getPetMood() {
     return {
       moodClass: 'mood-cool',
       avatar: '🛸🥶',
-      speech: `บรื๋ออ~ อากาศเย็นจัง (${t}°C) เปิดฮีตเตอร์หน่อยครับ!`,
+      speech: `บรื๋ออ~ อากาศเย็นจัง (${t}°C) กด 🌡️ Log Temp ป้อนอุณหภูมิอุ่นๆ หน่อยครับ!`,
     };
   }
 
   return {
     moodClass: '',
     avatar: '🛸✨',
-    speech: `สวัสดี! ผมชื่อ ${name} อากาศกำลังดี (${t}°C) พร้อมบินครับ!`,
+    speech: `สวัสดี! ผมชื่อ ${name} (${t}°C) เช็กสเปกด้านล่าง แล้วกด 🌡️ Log Temp ป้อนอุณหภูมิให้ผมได้เลย!`,
   };
 }
 
@@ -261,7 +261,7 @@ async function submitTemperature(celsiusValue) {
     state.latestTemp = celsius;
     state.feedback = {
       type: 'success',
-      text: `บันทึกอุณหภูมิ ${celsius}°C สำเร็จเรียบร้อย!`,
+      text: `บันทึกอุณหภูมิ ${celsius}°C สำเร็จเรียบร้อย! กด 📜 View Logs ดูประวัติได้เลย`,
     };
     await fetchLogs(1);
   } catch (err) {
