@@ -22,6 +22,7 @@ const state = {
   openMenu: null, // null | 'file' | 'telemetry' | 'view' | 'start'
   showMonitorWin: true,
   showTerminalWin: true,
+  isRebooted: false, // สถานะรีบูตฉุกเฉินชั่วคราว
 };
 
 // ปิดเมนู Dropdown เมื่อคลิกพื้นที่ว่างข้างนอก
@@ -75,6 +76,16 @@ function playBeep(type = 'click') {
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
       osc.start(now);
       osc.stop(now + 0.36);
+    } else if (type === 'shutdown') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.setValueAtTime(349.23, now + 0.12);
+      osc.frequency.setValueAtTime(261.63, now + 0.24);
+      osc.frequency.setValueAtTime(146.83, now + 0.36);
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+      osc.start(now);
+      osc.stop(now + 0.55);
     } else if (type === 'error') {
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(220, now);
@@ -119,12 +130,13 @@ function exportLogsCSV() {
   playBeep('success');
 }
 
-// คำนวณอารมณ์และคำพูดของ Spanner ตามอุณหภูมิล่าสุด
+// คำนวณอารมณ์และสถานะชัตดาวน์/กู้ชีพของ Spanner ตามอุณหภูมิล่าสุด
 function getPetMood() {
   const name = state.config?.drone_name || 'Spanner';
   if (state.isLoading) {
     return {
       moodClass: '',
+      isDead: false,
       avatar: '🛸💤',
       speech: state.isWakingUp
         ? 'กำลังปลุกเซิร์ฟเวอร์และอุ่นเครื่องยนต์ รอสักครู่นะครับ...'
@@ -132,18 +144,47 @@ function getPetMood() {
     };
   }
 
+  if (state.isRebooted) {
+    return {
+      moodClass: '',
+      isDead: false,
+      avatar: '🛸✨',
+      speech: `รีบูตระบบฉุกเฉินสำเร็จ! อย่าลืมกด 🌡️ Log Temp ป้อนค่า 25°C เพื่อกู้ชีพถาวรนะครับ`,
+    };
+  }
+
   const t = state.latestTemp;
   if (t === null || Number.isNaN(Number(t))) {
     return {
       moodClass: '',
+      isDead: false,
       avatar: '🛸✨',
       speech: `สวัสดี! ผมชื่อ ${name} เช็กสเปกด้านขวา แล้วกด 🌡️ Log Temp ป้อนอุณหภูมิให้ผมได้เลย!`,
+    };
+  }
+
+  if (t >= 40) {
+    return {
+      moodClass: 'mood-dead',
+      isDead: true,
+      avatar: '🛸💀',
+      speech: `OVERHEAT SHUTDOWN (${t}°C)! เครื่องฮีตจนดับ! กด 🌡️ Log Temp ป้อนค่า 25°C เพื่อกู้ชีพ`,
+    };
+  }
+
+  if (t <= 10) {
+    return {
+      moodClass: 'mood-dead',
+      isDead: true,
+      avatar: '🛸🧊',
+      speech: `CRYO FREEZE (${t}°C)! เครื่องแข็งตัวจนดับ! กด 🌡️ Log Temp ป้อนค่า 25°C เพื่อกู้ชีพ`,
     };
   }
 
   if (t >= 35) {
     return {
       moodClass: 'mood-hot',
+      isDead: false,
       avatar: '🛸🥵',
       speech: `ร้อนจี๋เลย (${t}°C)! กด 🌡️ Log Temp ป้อนอากาศเย็นๆ ให้ผมหน่อยครับ!`,
     };
@@ -152,6 +193,7 @@ function getPetMood() {
   if (t < 20) {
     return {
       moodClass: 'mood-cool',
+      isDead: false,
       avatar: '🛸🥶',
       speech: `บรื๋ออ~ อากาศเย็นจัง (${t}°C) กด 🌡️ Log Temp ป้อนอุณหภูมิอุ่นๆ หน่อยครับ!`,
     };
@@ -159,6 +201,7 @@ function getPetMood() {
 
   return {
     moodClass: '',
+    isDead: false,
     avatar: '🛸✨',
     speech: `สวัสดี! ผมชื่อ ${name} (${t}°C) เช็กสเปกด้านขวา แล้วกด 🌡️ Log Temp ป้อนอุณหภูมิให้ผมได้เลย!`,
   };
@@ -259,6 +302,7 @@ async function fetchLogs(page = 1) {
 // โหลดข้อมูลเริ่มต้น
 async function initApp() {
   state.isLoading = true;
+  state.isRebooted = false;
   render();
 
   const wakeTimer = setTimeout(() => {
@@ -317,12 +361,34 @@ async function submitTemperature(celsiusValue) {
 
     if (!res.ok) throw new Error('Failed to create log');
 
-    playBeep('success');
+    const wasDead =
+      !state.isRebooted &&
+      state.latestTemp !== null &&
+      (state.latestTemp >= 40 || state.latestTemp <= 10);
+
+    state.isRebooted = false;
     state.latestTemp = celsius;
-    state.feedback = {
-      type: 'success',
-      text: `บันทึกอุณหภูมิ ${celsius}°C สำเร็จเรียบร้อย! กด 📜 View Logs ดูประวัติได้เลย`,
-    };
+
+    if (celsius >= 40 || celsius <= 10) {
+      playBeep('shutdown');
+      state.feedback = {
+        type: 'error',
+        text: `บันทึก ${celsius}°C แล้ว แต่เครื่องชัตดาวน์เพราะอุณหภูมิวิกฤต! กด 25°C แล้วบันทึกเพื่อกู้ชีพ`,
+      };
+    } else if (wasDead) {
+      playBeep('success');
+      state.feedback = {
+        type: 'success',
+        text: `กู้ชีพ Spanner สำเร็จด้วยอุณหภูมิ ${celsius}°C! กลับมาพร้อมบินแล้วครับ`,
+      };
+    } else {
+      playBeep('success');
+      state.feedback = {
+        type: 'success',
+        text: `บันทึกอุณหภูมิ ${celsius}°C สำเร็จเรียบร้อย! กด 📜 View Logs ดูประวัติได้เลย`,
+      };
+    }
+
     await fetchLogs(1);
   } catch (err) {
     playBeep('error');
@@ -382,9 +448,10 @@ function renderActivePanel() {
           />
         </div>
         <div class="preset-row">
-          <button type="button" class="preset-btn" data-temp="18">❄️ 18°C (เย็น)</button>
+          <button type="button" class="preset-btn" data-temp="8">🧊 8°C (แข็ง)</button>
           <button type="button" class="preset-btn" data-temp="25">🌤️ 25°C (ปกติ)</button>
-          <button type="button" class="preset-btn" data-temp="38">🔥 38°C (ร้อนจัด)</button>
+          <button type="button" class="preset-btn" data-temp="37">🔥 37°C (ร้อน)</button>
+          <button type="button" class="preset-btn" data-temp="42">💀 42°C (ฮีตดับ)</button>
         </div>
         <button type="submit" class="submit-btn" ${state.isSubmitting ? 'disabled' : ''}>
           ${state.isSubmitting ? 'กำลังส่งข้อมูล...' : 'บันทึกอุณหภูมิ (Submit Data)'}
@@ -453,7 +520,9 @@ function render() {
   const app = document.getElementById('app');
   const pet = getPetMood();
   const lightStatus = (state.config?.light || 'off').toUpperCase();
-  const conditionStatus = state.status?.condition || 'checking...';
+  const conditionStatus = pet.isDead
+    ? 'OFFLINE'
+    : state.status?.condition || 'checking...';
   const tempDisplay =
     state.latestTemp !== null ? `${state.latestTemp} °C` : '-- °C';
 
@@ -462,12 +531,10 @@ function render() {
 
   app.innerHTML = `
     <div class="os-desktop ${state.isRadar ? 'radar-mode' : ''}">
-      <!-- แถบเมนูบาร์ด้านบน (กดเปิดเมนูได้จริงทุกปุ่ม) -->
       <header class="os-menubar">
         <div class="menubar-left">
-          <span class="os-logo">🛸 DRONE PET OS v3.0</span>
+          <span class="os-logo">🛸 DRONE PET OS v3.1</span>
 
-          <!-- เมนู File -->
           <div class="menu-wrapper">
             <button class="menu-trigger ${state.openMenu === 'file' ? 'active' : ''}" data-menu="file">
               File
@@ -484,7 +551,6 @@ function render() {
             }
           </div>
 
-          <!-- เมนู Telemetry -->
           <div class="menu-wrapper">
             <button class="menu-trigger ${state.openMenu === 'telemetry' ? 'active' : ''}" data-menu="telemetry">
               Telemetry
@@ -502,7 +568,6 @@ function render() {
             }
           </div>
 
-          <!-- เมนู View -->
           <div class="menu-wrapper">
             <button class="menu-trigger ${state.openMenu === 'view' ? 'active' : ''}" data-menu="view">
               View
@@ -539,7 +604,6 @@ function render() {
         </div>
       </header>
 
-      <!-- พื้นที่ทำงานตรงกลาง -->
       <main class="desktop-workspace ${visibleCount === 1 ? 'single-win' : ''}">
         ${
           visibleCount === 0
@@ -547,7 +611,6 @@ function render() {
             : ''
         }
 
-        <!-- หน้าต่างซ้าย: SPANNER_MONITOR.EXE -->
         ${
           state.showMonitorWin
             ? `
@@ -568,8 +631,15 @@ function render() {
                 </div>
 
                 <div class="lcd-stage">
-                  <div class="pet-avatar">${pet.avatar}</div>
-                  <div class="speech-bubble">${pet.speech}</div>
+                  <div class="pet-avatar ${pet.isDead ? 'dead' : ''}">${pet.avatar}</div>
+                  <div class="speech-bubble">
+                    <div>${pet.speech}</div>
+                    ${
+                      pet.isDead
+                        ? `<button id="rebootBtn" class="reboot-btn">🔄 Reboot System (รีบูตชั่วคราว)</button>`
+                        : ''
+                    }
+                  </div>
                 </div>
 
                 <div class="lcd-footer">
@@ -588,7 +658,6 @@ function render() {
             : ''
         }
 
-        <!-- หน้าต่างขวา: CONTROL_TERMINAL.APP -->
         ${
           state.showTerminalWin
             ? `
@@ -624,7 +693,6 @@ function render() {
         }
       </main>
 
-      <!-- แถบ Taskbar ด้านล่าง (กดเปิด Start และย่อ/ขยายหน้าต่างได้จริง) -->
       <footer class="os-taskbar">
         <div class="taskbar-apps">
           <div class="start-wrapper" style="position: relative;">
@@ -662,6 +730,13 @@ function render() {
       </footer>
     </div>
   `;
+
+  // ปุ่มรีบูตฉุกเฉินบนหน้าจอ LCD
+  document.getElementById('rebootBtn')?.addEventListener('click', () => {
+    playBeep('success');
+    state.isRebooted = true;
+    render();
+  });
 
   // เปิด/ปิดเมนู Dropdown ด้านบน
   document.querySelectorAll('.menu-trigger').forEach((btn) => {

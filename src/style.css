@@ -1,821 +1,143 @@
-:root {
-  --desktop-bg: #1e3d59;
-  --desktop-grid: rgba(255, 255, 255, 0.05);
-  --win-bg: #f4f1de;
-  --win-border: #2b2d42;
-  --win-titlebar: #3d5a80;
-  --win-titlebar-alt: #e07a5f;
-  --lcd-bg: #c8dbb9;
-  --lcd-border: #5c6e4e;
-  --lcd-text: #1f2d18;
-  --tab-bg: #e9ecef;
-  --tab-active: #2a9d8f;
-  --btn-primary: #e76f51;
-  --btn-primary-hover: #d65a3b;
-  --text-main: #2b2d42;
-}
+:root { --desktop-bg: #1e3d59; --desktop-grid: rgba(255, 255, 255, 0.05); --win-bg: #f4f1de; --win-border: #2b2d42; --win-titlebar: #3d5a80; --win-titlebar-alt: #e07a5f; --lcd-bg: #c8dbb9; --lcd-border: #5c6e4e; --lcd-text: #1f2d18; --tab-bg: #e9ecef; --tab-active: #2a9d8f; --btn-primary: #e76f51; --btn-primary-hover: #d65a3b; --text-main: #2b2d42; }
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Chakra Petch', sans-serif; }
+body { min-height: 100vh; background-color: var(--desktop-bg); background-image: linear-gradient(var(--desktop-grid) 1px, transparent 1px), linear-gradient(90deg, var(--desktop-grid) 1px, transparent 1px); background-size: 32px 32px; color: var(--text-main); display: flex; flex-direction: column; }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  font-family: 'Chakra Petch', sans-serif;
-}
+.os-desktop { min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; transition: background 0.3s ease; position: relative; }
+.os-desktop.radar-mode { background-color: #070d10; background-image: linear-gradient(rgba(57, 255, 20, 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(57, 255, 20, 0.07) 1px, transparent 1px); background-size: 28px 28px; }
 
-body {
-  min-height: 100vh;
-  background-color: var(--desktop-bg);
-  background-image: linear-gradient(var(--desktop-grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--desktop-grid) 1px, transparent 1px);
-  background-size: 32px 32px;
-  color: var(--text-main);
-  display: flex;
-  flex-direction: column;
-}
+.os-menubar { background: #1b263b; color: #f8f9fa; border-bottom: 2px solid #0d1b2a; padding: 5px 18px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; font-weight: 600; position: relative; z-index: 50; }
+.os-desktop.radar-mode .os-menubar { background: #0b1912; border-bottom-color: #268c14; color: #39ff14; }
+.menubar-left, .menubar-right { display: flex; align-items: center; gap: 8px; }
+.os-logo { font-weight: 700; color: #ffd166; letter-spacing: 0.5px; margin-right: 6px; }
+.os-desktop.radar-mode .os-logo { color: #39ff14; }
 
-/* โครงสร้างหลักของหน้าจอคอมพิวเตอร์ */
-.os-desktop {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  transition: background 0.3s ease;
-  position: relative;
-}
+.menu-wrapper { position: relative; }
+.menu-trigger { background: transparent; border: 1px solid transparent; color: #f8f9fa; font-size: 0.84rem; font-weight: 600; padding: 3px 10px; border-radius: 5px; cursor: pointer; transition: 0.15s; }
+.menu-trigger:hover, .menu-trigger.active { background: rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.25); }
+.os-desktop.radar-mode .menu-trigger { color: #39ff14; }
+.os-desktop.radar-mode .menu-trigger:hover, .os-desktop.radar-mode .menu-trigger.active { background: rgba(57, 255, 20, 0.15); border-color: #39ff14; }
 
-.os-desktop.radar-mode {
-  background-color: #070d10;
-  background-image: linear-gradient(rgba(57, 255, 20, 0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(57, 255, 20, 0.07) 1px, transparent 1px);
-  background-size: 28px 28px;
-}
+.dropdown-panel { position: absolute; top: calc(100% + 6px); left: 0; min-width: 215px; background: #ffffff; color: #1b263b; border: 2px solid #1b263b; border-radius: 8px; box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35); padding: 6px; display: flex; flex-direction: column; gap: 3px; z-index: 100; }
+.os-desktop.radar-mode .dropdown-panel { background: #0d1a14; color: #39ff14; border-color: #39ff14; }
+.dropdown-item { background: transparent; border: none; text-align: left; padding: 7px 10px; border-radius: 5px; font-size: 0.83rem; font-weight: 600; color: inherit; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.dropdown-item:hover { background: #2a9d8f; color: #ffffff; }
+.os-desktop.radar-mode .dropdown-item:hover { background: #1b4332; color: #39ff14; }
+.dropdown-divider { height: 1px; background: #dee2e6; margin: 3px 0; }
+.os-desktop.radar-mode .dropdown-divider { background: #264653; }
 
-/* แถบเมนูบาร์ด้านบน (Top OS Bar) */
-.os-menubar {
-  background: #1b263b;
-  color: #f8f9fa;
-  border-bottom: 2px solid #0d1b2a;
-  padding: 5px 18px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.85rem;
-  font-weight: 600;
-  position: relative;
-  z-index: 50;
-}
+.hw-btn { background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.25); color: #ffffff; font-size: 0.78rem; font-weight: 700; padding: 3px 10px; border-radius: 6px; cursor: pointer; transition: 0.15s; }
+.hw-btn:hover { background: rgba(255, 255, 255, 0.22); }
+.os-desktop.radar-mode .hw-btn { background: rgba(57, 255, 20, 0.12); border-color: #39ff14; color: #39ff14; }
+.os-clock { font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; background: rgba(0, 0, 0, 0.3); padding: 3px 9px; border-radius: 5px; }
 
-.os-desktop.radar-mode .os-menubar {
-  background: #0b1912;
-  border-bottom-color: #268c14;
-  color: #39ff14;
-}
+.desktop-workspace { width: 100%; max-width: 1120px; margin: auto; padding: 24px 20px; display: grid; grid-template-columns: 380px 1fr; gap: 22px; align-items: start; }
+.desktop-workspace.single-win { grid-template-columns: 1fr; max-width: 680px; }
+.empty-desktop-msg { text-align: center; color: rgba(255, 255, 255, 0.75); background: rgba(0, 0, 0, 0.25); border: 2px dashed rgba(255, 255, 255, 0.25); border-radius: 14px; padding: 36px 20px; font-size: 0.95rem; }
+@media (max-width: 880px) { .desktop-workspace { grid-template-columns: 1fr; max-width: 600px; } }
 
-.menubar-left,
-.menubar-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.os-logo {
-  font-weight: 700;
-  color: #ffd166;
-  letter-spacing: 0.5px;
-  margin-right: 6px;
-}
-
-.os-desktop.radar-mode .os-logo {
-  color: #39ff14;
-}
-
-/* ปุ่มเมนู Dropdown ด้านบน */
-.menu-wrapper {
-  position: relative;
-}
-
-.menu-trigger {
-  background: transparent;
-  border: 1px solid transparent;
-  color: #f8f9fa;
-  font-size: 0.84rem;
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: 0.15s;
-}
-
-.menu-trigger:hover,
-.menu-trigger.active {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.25);
-}
-
-.os-desktop.radar-mode .menu-trigger {
-  color: #39ff14;
-}
-
-.os-desktop.radar-mode .menu-trigger:hover,
-.os-desktop.radar-mode .menu-trigger.active {
-  background: rgba(57, 255, 20, 0.15);
-  border-color: #39ff14;
-}
-
-.dropdown-panel {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  min-width: 210px;
-  background: #ffffff;
-  color: #1b263b;
-  border: 2px solid #1b263b;
-  border-radius: 8px;
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
-  padding: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  z-index: 100;
-}
-
-.os-desktop.radar-mode .dropdown-panel {
-  background: #0d1a14;
-  color: #39ff14;
-  border-color: #39ff14;
-}
-
-.dropdown-item {
-  background: transparent;
-  border: none;
-  text-align: left;
-  padding: 7px 10px;
-  border-radius: 5px;
-  font-size: 0.83rem;
-  font-weight: 600;
-  color: inherit;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.dropdown-item:hover {
-  background: #2a9d8f;
-  color: #ffffff;
-}
-
-.os-desktop.radar-mode .dropdown-item:hover {
-  background: #1b4332;
-  color: #39ff14;
-}
-
-.dropdown-divider {
-  height: 1px;
-  background: #dee2e6;
-  margin: 3px 0;
-}
-
-.os-desktop.radar-mode .dropdown-divider {
-  background: #264653;
-}
-
-.hw-btn {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: #ffffff;
-  font-size: 0.78rem;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: 0.15s;
-}
-
-.hw-btn:hover {
-  background: rgba(255, 255, 255, 0.22);
-}
-
-.os-desktop.radar-mode .hw-btn {
-  background: rgba(57, 255, 20, 0.12);
-  border-color: #39ff14;
-  color: #39ff14;
-}
-
-.os-clock {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.82rem;
-  background: rgba(0, 0, 0, 0.3);
-  padding: 3px 9px;
-  border-radius: 5px;
-}
-
-/* พื้นที่ทำงานตรงกลาง (จัดวาง 2 หน้าต่างคู่กัน) */
-.desktop-workspace {
-  width: 100%;
-  max-width: 1120px;
-  margin: auto;
-  padding: 24px 20px;
-  display: grid;
-  grid-template-columns: 380px 1fr;
-  gap: 22px;
-  align-items: start;
-}
-
-.desktop-workspace.single-win {
-  grid-template-columns: 1fr;
-  max-width: 680px;
-}
-
-.empty-desktop-msg {
-  text-align: center;
-  color: rgba(255, 255, 255, 0.75);
-  background: rgba(0, 0, 0, 0.25);
-  border: 2px dashed rgba(255, 255, 255, 0.25);
-  border-radius: 14px;
-  padding: 36px 20px;
-  font-size: 0.95rem;
-}
-
-@media (max-width: 880px) {
-  .desktop-workspace {
-    grid-template-columns: 1fr;
-    max-width: 600px;
-  }
-}
-
-/* กรอบหน้าต่างโปรแกรมสไตล์ Retro PC */
-.pc-window {
-  background: var(--win-bg);
-  border: 3px solid var(--win-border);
-  border-radius: 12px;
-  box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.35);
-  overflow: hidden;
-  transition: all 0.25s ease;
-}
-
-.os-desktop.radar-mode .pc-window {
-  background: #101a1f;
-  border-color: #2e8b57;
-  box-shadow: 0 0 20px rgba(57, 255, 20, 0.15);
-  color: #d8f3dc;
-}
-
-.window-titlebar {
-  background: var(--win-titlebar);
-  color: #ffffff;
-  padding: 8px 14px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 3px solid var(--win-border);
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-
-.window-titlebar.alt {
-  background: var(--win-titlebar-alt);
-}
-
-.os-desktop.radar-mode .window-titlebar {
-  background: #143622;
-  border-bottom-color: #2e8b57;
-  color: #39ff14;
-}
-
-.window-controls {
-  display: flex;
-  gap: 6px;
-}
-
-.win-dot {
-  width: 13px;
-  height: 13px;
-  border-radius: 3px;
-  border: 1.5px solid #1b263b;
-  display: inline-block;
-  cursor: pointer;
-}
-
+.pc-window { background: var(--win-bg); border: 3px solid var(--win-border); border-radius: 12px; box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.35); overflow: hidden; transition: all 0.25s ease; }
+.os-desktop.radar-mode .pc-window { background: #101a1f; border-color: #2e8b57; box-shadow: 0 0 20px rgba(57, 255, 20, 0.15); color: #d8f3dc; }
+.window-titlebar { background: var(--win-titlebar); color: #ffffff; padding: 8px 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--win-border); font-size: 0.85rem; font-weight: 700; letter-spacing: 0.5px; }
+.window-titlebar.alt { background: var(--win-titlebar-alt); }
+.os-desktop.radar-mode .window-titlebar { background: #143622; border-bottom-color: #2e8b57; color: #39ff14; }
+.window-controls { display: flex; gap: 6px; }
+.win-dot { width: 13px; height: 13px; border-radius: 3px; border: 1.5px solid #1b263b; display: inline-block; cursor: pointer; }
 .win-dot.min { background: #ffd166; }
 .win-dot.max { background: #06d6a0; }
 .win-dot.cls { background: #ef476f; }
+.window-body { padding: 18px; }
 
-.window-body {
-  padding: 18px;
-}
+.lcd-screen { background: var(--lcd-bg); border: 3px solid var(--lcd-border); border-radius: 10px; padding: 14px; color: var(--lcd-text); box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.15); transition: all 0.35s ease; }
+.lcd-screen.mood-cool { background: #cde4f2; border-color: #5c859e; color: #163042; }
+.lcd-screen.mood-hot { background: #f7cbb8; border-color: #b55d3c; color: #42190b; }
+.lcd-screen.mood-dead { background: #2b2d42; border-color: #ef233c; color: #ffccd5; box-shadow: inset 0 0 18px rgba(239, 35, 60, 0.45); }
+.os-desktop.radar-mode .lcd-screen { background: #06140b; background-image: linear-gradient(rgba(57, 255, 20, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(57, 255, 20, 0.08) 1px, transparent 1px); background-size: 16px 16px; border-color: #268c14; color: #39ff14; }
+.os-desktop.radar-mode .lcd-screen.mood-dead { border-color: #ff4d6d; color: #ff4d6d; }
 
-/* หน้าจอ LCD ภายในหน้าต่างซ้าย */
-.lcd-screen {
-  background: var(--lcd-bg);
-  border: 3px solid var(--lcd-border);
-  border-radius: 10px;
-  padding: 14px;
-  color: var(--lcd-text);
-  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.15);
-  transition: all 0.35s ease;
-}
+.lcd-header, .lcd-footer { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; font-weight: 700; }
+.pill-tag { background: rgba(0, 0, 0, 0.1); padding: 2px 8px; border-radius: 5px; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
+.os-desktop.radar-mode .pill-tag { background: rgba(57, 255, 20, 0.15); border: 1px solid rgba(57, 255, 20, 0.4); }
 
-.lcd-screen.mood-cool {
-  background: #cde4f2;
-  border-color: #5c859e;
-  color: #163042;
-}
+.lcd-stage { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; padding: 20px 8px; }
+.pet-avatar { font-size: 3.4rem; animation: floatPet 2.4s ease-in-out infinite; user-select: none; }
+.pet-avatar.dead { animation: none; transform: rotate(12deg); opacity: 0.9; }
+@keyframes floatPet { 0%, 100% { transform: translateY(0px) rotate(-2deg); } 50% { transform: translateY(-7px) rotate(3deg); } }
 
-.lcd-screen.mood-hot {
-  background: #f7cbb8;
-  border-color: #b55d3c;
-  color: #42190b;
-}
+.speech-bubble { background: rgba(255, 255, 255, 0.9); color: #1f2937; padding: 10px 14px; border-radius: 12px; font-size: 0.88rem; font-weight: 600; box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08); line-height: 1.4; }
+.os-desktop.radar-mode .speech-bubble { background: rgba(6, 26, 13, 0.92); color: #39ff14; border: 1px solid #39ff14; }
+.reboot-btn { margin-top: 8px; background: #ef233c; color: #ffffff; border: none; border-radius: 6px; padding: 5px 12px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: inline-block; }
+.reboot-btn:hover { background: #d90429; }
 
-.os-desktop.radar-mode .lcd-screen {
-  background: #06140b;
-  background-image: linear-gradient(rgba(57, 255, 20, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(57, 255, 20, 0.08) 1px, transparent 1px);
-  background-size: 16px 16px;
-  border-color: #268c14;
-  color: #39ff14;
-}
+.monitor-meta { margin-top: 12px; padding-top: 10px; border-top: 2px dashed rgba(0, 0, 0, 0.15); display: flex; justify-content: space-between; font-size: 0.78rem; color: #555; font-family: 'JetBrains Mono', monospace; }
+.os-desktop.radar-mode .monitor-meta { border-top-color: rgba(57, 255, 20, 0.25); color: #80ed99; }
 
-.lcd-header,
-.lcd-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.85rem;
-  font-weight: 700;
-}
+.nav-tabs { display: flex; gap: 8px; border-bottom: 2px solid #dee2e6; padding-bottom: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.os-desktop.radar-mode .nav-tabs { border-bottom-color: #264653; }
+.tab-btn { background: var(--tab-bg); color: #2b2d42; border: 2px solid #ced4da; border-radius: 8px; padding: 8px 16px; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.15s; }
+.tab-btn:hover { background: #dee2e6; }
+.tab-btn.active { background: var(--tab-active); color: #ffffff; border-color: #1d6f65; }
+.os-desktop.radar-mode .tab-btn { background: #18262e; color: #a8dadc; border-color: #2a404d; }
+.os-desktop.radar-mode .tab-btn.active { background: #1b4332; color: #39ff14; border-color: #39ff14; }
 
-.pill-tag {
-  background: rgba(0, 0, 0, 0.1);
-  padding: 2px 8px;
-  border-radius: 5px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.78rem;
-}
+.panel-card { background: #ffffff; border: 2px solid #e9ecef; border-radius: 10px; padding: 18px; }
+.os-desktop.radar-mode .panel-card { background: #0d161b; border-color: #264653; }
+.panel-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
 
-.os-desktop.radar-mode .pill-tag {
-  background: rgba(57, 255, 20, 0.15);
-  border: 1px solid rgba(57, 255, 20, 0.4);
-}
+.config-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.config-item { background: #f8f9fa; border: 1.5px solid #dee2e6; border-radius: 8px; padding: 14px; }
+.os-desktop.radar-mode .config-item { background: #142229; border-color: #2a404d; }
+.config-label { font-size: 0.8rem; color: #6c757d; margin-bottom: 4px; }
+.os-desktop.radar-mode .config-label { color: #8ecae6; }
+.config-value { font-size: 1.15rem; font-weight: 700; }
 
-.lcd-stage {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 12px;
-  padding: 22px 8px;
-}
+.form-group { margin-bottom: 12px; }
+.form-label { display: block; font-size: 0.92rem; font-weight: 600; margin-bottom: 6px; }
+.temp-input { width: 100%; padding: 12px 14px; font-size: 1.1rem; font-weight: 700; border: 2px solid #ced4da; border-radius: 8px; outline: none; }
+.temp-input:focus { border-color: var(--tab-active); }
+.os-desktop.radar-mode .temp-input { background: #080f12; color: #39ff14; border-color: #2a9d8f; }
 
-.pet-avatar {
-  font-size: 3.4rem;
-  animation: floatPet 2.4s ease-in-out infinite;
-  user-select: none;
-}
+.preset-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+@media (max-width: 520px) { .preset-row { grid-template-columns: repeat(2, 1fr); } }
+.preset-btn { background: #f1f3f5; border: 1.5px solid #ced4da; border-radius: 8px; padding: 8px 6px; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+.preset-btn:hover { background: #e2e6ea; }
+.os-desktop.radar-mode .preset-btn { background: #18262e; color: #d8f3dc; border-color: #2f4858; }
 
-@keyframes floatPet {
-  0%, 100% { transform: translateY(0px) rotate(-2deg); }
-  50% { transform: translateY(-7px) rotate(3deg); }
-}
-
-.speech-bubble {
-  background: rgba(255, 255, 255, 0.88);
-  color: #1f2937;
-  padding: 10px 14px;
-  border-radius: 12px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
-  line-height: 1.4;
-}
-
-.os-desktop.radar-mode .speech-bubble {
-  background: rgba(6, 26, 13, 0.92);
-  color: #39ff14;
-  border: 1px solid #39ff14;
-}
-
-.monitor-meta {
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 2px dashed rgba(0, 0, 0, 0.15);
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.78rem;
-  color: #555;
-  font-family: 'JetBrains Mono', monospace;
-}
-
-.os-desktop.radar-mode .monitor-meta {
-  border-top-color: rgba(57, 255, 20, 0.25);
-  color: #80ed99;
-}
-
-/* แถบแท็บเมนูในหน้าต่างขวา */
-.nav-tabs {
-  display: flex;
-  gap: 8px;
-  border-bottom: 2px solid #dee2e6;
-  padding-bottom: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-.os-desktop.radar-mode .nav-tabs {
-  border-bottom-color: #264653;
-}
-
-.tab-btn {
-  background: var(--tab-bg);
-  color: #2b2d42;
-  border: 2px solid #ced4da;
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.tab-btn:hover {
-  background: #dee2e6;
-}
-
-.tab-btn.active {
-  background: var(--tab-active);
-  color: #ffffff;
-  border-color: #1d6f65;
-}
-
-.os-desktop.radar-mode .tab-btn {
-  background: #18262e;
-  color: #a8dadc;
-  border-color: #2a404d;
-}
-
-.os-desktop.radar-mode .tab-btn.active {
-  background: #1b4332;
-  color: #39ff14;
-  border-color: #39ff14;
-}
-
-/* เนื้อหาภายในหน้าต่างขวา */
-.panel-card {
-  background: #ffffff;
-  border: 2px solid #e9ecef;
-  border-radius: 10px;
-  padding: 18px;
-}
-
-.os-desktop.radar-mode .panel-card {
-  background: #0d161b;
-  border-color: #264653;
-}
-
-.panel-title {
-  font-size: 1.15rem;
-  font-weight: 700;
-  margin-bottom: 14px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-/* ตาราง Config */
-.config-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.config-item {
-  background: #f8f9fa;
-  border: 1.5px solid #dee2e6;
-  border-radius: 8px;
-  padding: 14px;
-}
-
-.os-desktop.radar-mode .config-item {
-  background: #142229;
-  border-color: #2a404d;
-}
-
-.config-label {
-  font-size: 0.8rem;
-  color: #6c757d;
-  margin-bottom: 4px;
-}
-
-.os-desktop.radar-mode .config-label {
-  color: #8ecae6;
-}
-
-.config-value {
-  font-size: 1.15rem;
-  font-weight: 700;
-}
-
-/* ฟอร์มบันทึกอุณหภูมิ */
-.form-group {
-  margin-bottom: 12px;
-}
-
-.form-label {
-  display: block;
-  font-size: 0.92rem;
-  font-weight: 600;
-  margin-bottom: 6px;
-}
-
-.temp-input {
-  width: 100%;
-  padding: 12px 14px;
-  font-size: 1.1rem;
-  font-weight: 700;
-  border: 2px solid #ced4da;
-  border-radius: 8px;
-  outline: none;
-}
-
-.temp-input:focus {
-  border-color: var(--tab-active);
-}
-
-.os-desktop.radar-mode .temp-input {
-  background: #080f12;
-  color: #39ff14;
-  border-color: #2a9d8f;
-}
-
-.preset-row {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-}
-
-.preset-btn {
-  flex: 1;
-  min-width: 100px;
-  background: #f1f3f5;
-  border: 1.5px solid #ced4da;
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.preset-btn:hover {
-  background: #e2e6ea;
-}
-
-.os-desktop.radar-mode .preset-btn {
-  background: #18262e;
-  color: #d8f3dc;
-  border-color: #2f4858;
-}
-
-.submit-btn {
-  width: 100%;
-  background: var(--btn-primary);
-  color: #ffffff;
-  border: none;
-  border-bottom: 4px solid #b5462a;
-  border-radius: 8px;
-  padding: 12px;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.submit-btn:hover:not(:disabled) {
-  background: var(--btn-primary-hover);
-}
-
-.submit-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.feedback-msg {
-  margin-top: 12px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-align: center;
-}
-
+.submit-btn { width: 100%; background: var(--btn-primary); color: #ffffff; border: none; border-bottom: 4px solid #b5462a; border-radius: 8px; padding: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; }
+.submit-btn:hover:not(:disabled) { background: var(--btn-primary-hover); }
+.submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.feedback-msg { margin-top: 12px; font-size: 0.9rem; font-weight: 600; text-align: center; }
 .feedback-msg.success { color: #2a9d8f; }
 .feedback-msg.error { color: #e63946; }
 
-/* กราฟเส้น Sparkline */
-.sparkline-box {
-  background: #f8f9fa;
-  border: 1.5px solid #dee2e6;
-  border-radius: 8px;
-  padding: 10px 14px;
-  margin-bottom: 14px;
-}
+.sparkline-box { background: #f8f9fa; border: 1.5px solid #dee2e6; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; }
+.os-desktop.radar-mode .sparkline-box { background: #132026; border-color: #264653; }
+.sparkline-header { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; color: #6c757d; margin-bottom: 6px; }
+.os-desktop.radar-mode .sparkline-header { color: #39ff14; }
 
-.os-desktop.radar-mode .sparkline-box {
-  background: #132026;
-  border-color: #264653;
-}
+.table-wrap { overflow-x: auto; border-radius: 8px; border: 1.5px solid #dee2e6; }
+.os-desktop.radar-mode .table-wrap { border-color: #264653; }
+.logs-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; text-align: left; }
+.logs-table th { background: #2b2d42; color: #ffffff; padding: 10px 12px; white-space: nowrap; }
+.logs-table td { padding: 9px 12px; border-bottom: 1px solid #edf2f4; white-space: nowrap; }
+.os-desktop.radar-mode .logs-table td { border-bottom-color: #1f333d; }
+.logs-table tr:last-child td { border-bottom: none; }
 
-.sparkline-header {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #6c757d;
-  margin-bottom: 6px;
-}
+.pagination-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; font-size: 0.86rem; font-weight: 600; }
+.page-btn { background: #2b2d42; color: #ffffff; border: none; border-radius: 6px; padding: 7px 14px; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+.page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
-.os-desktop.radar-mode .sparkline-header {
-  color: #39ff14;
-}
+.os-taskbar { background: #1b263b; color: #e0e1dd; border-top: 2px solid #0d1b2a; padding: 6px 18px; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; position: relative; z-index: 50; }
+.os-desktop.radar-mode .os-taskbar { background: #0b1912; border-top-color: #268c14; color: #39ff14; }
+.taskbar-apps { display: flex; align-items: center; gap: 8px; position: relative; flex-wrap: wrap; }
+.start-btn { background: #2a9d8f; color: #ffffff; border: 1.5px solid #1d6f65; font-weight: 700; font-size: 0.8rem; padding: 4px 12px; border-radius: 5px; cursor: pointer; transition: 0.15s; }
+.start-btn:hover, .start-btn.active { background: #21867a; }
+.task-btn { background: rgba(255, 255, 255, 0.22); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.35); padding: 4px 11px; border-radius: 5px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: 0.15s; }
+.task-btn.minimized { background: rgba(255, 255, 255, 0.06); color: rgba(255, 255, 255, 0.55); border-style: dashed; }
+.os-desktop.radar-mode .task-btn { background: rgba(57, 255, 20, 0.18); border-color: #39ff14; color: #39ff14; }
+.os-desktop.radar-mode .task-btn.minimized { background: transparent; opacity: 0.55; }
 
-/* ตาราง View Logs */
-.table-wrap {
-  overflow-x: auto;
-  border-radius: 8px;
-  border: 1.5px solid #dee2e6;
-}
-
-.os-desktop.radar-mode .table-wrap {
-  border-color: #264653;
-}
-
-.logs-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.86rem;
-  text-align: left;
-}
-
-.logs-table th {
-  background: #2b2d42;
-  color: #ffffff;
-  padding: 10px 12px;
-  white-space: nowrap;
-}
-
-.logs-table td {
-  padding: 9px 12px;
-  border-bottom: 1px solid #edf2f4;
-  white-space: nowrap;
-}
-
-.os-desktop.radar-mode .logs-table td {
-  border-bottom-color: #1f333d;
-}
-
-.logs-table tr:last-child td {
-  border-bottom: none;
-}
-
-.pagination-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 14px;
-  font-size: 0.86rem;
-  font-weight: 600;
-}
-
-.page-btn {
-  background: #2b2d42;
-  color: #ffffff;
-  border: none;
-  border-radius: 6px;
-  padding: 7px 14px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.page-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-/* แถบ Taskbar ด้านล่าง */
-.os-taskbar {
-  background: #1b263b;
-  color: #e0e1dd;
-  border-top: 2px solid #0d1b2a;
-  padding: 6px 18px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.8rem;
-  position: relative;
-  z-index: 50;
-}
-
-.os-desktop.radar-mode .os-taskbar {
-  background: #0b1912;
-  border-top-color: #268c14;
-  color: #39ff14;
-}
-
-.taskbar-apps {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  position: relative;
-  flex-wrap: wrap;
-}
-
-.start-btn {
-  background: #2a9d8f;
-  color: #ffffff;
-  border: 1.5px solid #1d6f65;
-  font-weight: 700;
-  font-size: 0.8rem;
-  padding: 4px 12px;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: 0.15s;
-}
-
-.start-btn:hover,
-.start-btn.active {
-  background: #21867a;
-}
-
-.task-btn {
-  background: rgba(255, 255, 255, 0.22);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  padding: 4px 11px;
-  border-radius: 5px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: 0.15s;
-}
-
-.task-btn.minimized {
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.55);
-  border-style: dashed;
-}
-
-.os-desktop.radar-mode .task-btn {
-  background: rgba(57, 255, 20, 0.18);
-  border-color: #39ff14;
-  color: #39ff14;
-}
-
-.os-desktop.radar-mode .task-btn.minimized {
-  background: transparent;
-  opacity: 0.55;
-}
-
-/* เมนู Start เด้งขึ้นด้านบน */
-.start-menu-panel {
-  position: absolute;
-  bottom: calc(100% + 10px);
-  left: 0;
-  width: 240px;
-  background: #ffffff;
-  color: #1b263b;
-  border: 2px solid #1b263b;
-  border-radius: 10px;
-  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.4);
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  z-index: 100;
-}
-
-.os-desktop.radar-mode .start-menu-panel {
-  background: #0d1a14;
-  color: #39ff14;
-  border-color: #39ff14;
-}
-
-.start-header {
-  background: #1b263b;
-  color: #ffd166;
-  padding: 8px 10px;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-
-.os-desktop.radar-mode .start-header {
-  background: #143622;
-  color: #39ff14;
-}
-
-.status-online {
-  color: #06d6a0;
-  font-weight: 700;
-}
+.start-menu-panel { position: absolute; bottom: calc(100% + 10px); left: 0; width: 240px; background: #ffffff; color: #1b263b; border: 2px solid #1b263b; border-radius: 10px; box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.4); padding: 8px; display: flex; flex-direction: column; gap: 4px; z-index: 100; }
+.os-desktop.radar-mode .start-menu-panel { background: #0d1a14; color: #39ff14; border-color: #39ff14; }
+.start-header { background: #1b263b; color: #ffd166; padding: 8px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; }
+.os-desktop.radar-mode .start-header { background: #143622; color: #39ff14; }
+.status-online { color: #06d6a0; font-weight: 700; }
