@@ -22,7 +22,7 @@ const state = {
   openMenu: null, // null | 'file' | 'telemetry' | 'view' | 'start'
   showMonitorWin: true,
   showTerminalWin: true,
-  isRebooted: false, // สถานะรีบูตฉุกเฉินชั่วคราว
+  isRebooted: false,
 };
 
 // ปิดเมนู Dropdown เมื่อคลิกพื้นที่ว่างข้างนอก
@@ -111,10 +111,10 @@ function exportLogsCSV() {
   }
   const headers = ['Created', 'Country', 'Drone ID', 'Drone Name', 'Celsius'];
   const rows = state.logs.map((r) => [
-    `"${r.created}"`,
-    `"${r.country}"`,
+    `"${r.created || r.created_at || ''}"`,
+    `"${r.country || ''}"`,
     r.drone_id,
-    `"${r.drone_name}"`,
+    `"${r.drone_name || ''}"`,
     r.celsius,
   ]);
   const csvContent =
@@ -283,23 +283,30 @@ setInterval(() => {
   if (clockEl) clockEl.textContent = getCurrentTimeStr();
 }, 1000);
 
-// ดึงข้อมูล Log ตามหน้า
+// ดึงข้อมูล Log ตามหน้า (รองรับทั้ง Array ตรงๆ และแบบห่อใน items / data)
 async function fetchLogs(page = 1) {
   try {
     const res = await fetch(`${API_URL}/logs/${DRONE_ID}?page=${page}`);
-    if (!res.ok) throw new Error('Failed to load logs');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    state.logs = Array.isArray(data) ? data : [];
+    const list = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.items)
+        ? data.items
+        : Array.isArray(data?.data)
+          ? data.data
+          : [];
+    state.logs = list;
     state.page = page;
     if (page === 1 && state.logs.length > 0) {
       state.latestTemp = Number(state.logs[0].celsius);
     }
   } catch (err) {
-    console.error(err);
+    console.error('Fetch logs error:', err);
   }
 }
 
-// โหลดข้อมูลเริ่มต้น
+// โหลดข้อมูลเริ่มต้นทั้งหมด
 async function initApp() {
   state.isLoading = true;
   state.isRebooted = false;
@@ -318,8 +325,18 @@ async function initApp() {
       fetch(`${API_URL}/status/${DRONE_ID}`),
     ]);
 
-    if (cfgRes.ok) state.config = await cfgRes.json();
-    if (statusRes.ok) state.status = await statusRes.json();
+    if (cfgRes.ok) {
+      const cfgData = await cfgRes.json();
+      state.config = Array.isArray(cfgData)
+        ? cfgData[0]
+        : cfgData?.data || cfgData;
+    }
+    if (statusRes.ok) {
+      const stData = await statusRes.json();
+      state.status = Array.isArray(stData)
+        ? stData[0]
+        : stData?.data || stData;
+    }
     await fetchLogs(1);
   } catch (err) {
     console.error('Init error:', err);
@@ -405,6 +422,10 @@ async function submitTemperature(celsiusValue) {
 function renderActivePanel() {
   if (state.activeTab === 'config') {
     const c = state.config || {};
+    const lightText =
+      c.light !== undefined && c.light !== null
+        ? String(c.light).toUpperCase()
+        : '-';
     return `
       <div class="panel-title">
         <span>🖥️ ข้อมูลจำเพาะโดรน (Drone Configuration)</span>
@@ -420,7 +441,7 @@ function renderActivePanel() {
         </div>
         <div class="config-item">
           <div class="config-label">Light Status</div>
-          <div class="config-value">${(c.light || '-').toUpperCase()}</div>
+          <div class="config-value">${lightText}</div>
         </div>
         <div class="config-item">
           <div class="config-label">Country</div>
@@ -490,10 +511,10 @@ function renderActivePanel() {
                   .map(
                     (row) => `
                   <tr>
-                    <td>${formatDateTime(row.created)}</td>
-                    <td>${row.country}</td>
+                    <td>${formatDateTime(row.created || row.created_at)}</td>
+                    <td>${row.country || '-'}</td>
                     <td>${row.drone_id}</td>
-                    <td>${row.drone_name}</td>
+                    <td>${row.drone_name || '-'}</td>
                     <td><strong>${row.celsius}°C</strong></td>
                   </tr>
                 `
@@ -519,7 +540,10 @@ function renderActivePanel() {
 function render() {
   const app = document.getElementById('app');
   const pet = getPetMood();
-  const lightStatus = (state.config?.light || 'off').toUpperCase();
+  const lightStatus =
+    state.config?.light !== undefined && state.config?.light !== null
+      ? String(state.config.light).toUpperCase()
+      : 'OFF';
   const conditionStatus = pet.isDead
     ? 'OFFLINE'
     : state.status?.condition || 'checking...';
