@@ -21,7 +21,7 @@ const state = {
   isMuted: false,
 };
 
-// ระบบสังเคราะห์เสียง 8-Bit (ไม่ต้องใช้ไฟล์ MP3 ภายนอก)
+// ระบบสังเคราะห์เสียง 8-Bit
 let audioCtx = null;
 function playBeep(type = 'click') {
   if (state.isMuted) return;
@@ -74,7 +74,7 @@ function playBeep(type = 'click') {
   }
 }
 
-// คำนวณอารมณ์และคำพูดแนะนำวิธีเล่นของ Spanner ตามอุณหภูมิล่าสุด
+// คำนวณอารมณ์และคำพูดของ Spanner ตามอุณหภูมิล่าสุด
 function getPetMood() {
   const name = state.config?.drone_name || 'Spanner';
   if (state.isLoading) {
@@ -92,7 +92,7 @@ function getPetMood() {
     return {
       moodClass: '',
       avatar: '🛸✨',
-      speech: `สวัสดี! ผมชื่อ ${name} เช็กสเปกด้านล่าง แล้วกด 🌡️ Log Temp ป้อนอุณหภูมิให้ผมได้เลย!`,
+      speech: `สวัสดี! ผมชื่อ ${name} เช็กสเปกด้านขวา แล้วกด 🌡️ Log Temp ป้อนอุณหภูมิให้ผมได้เลย!`,
     };
   }
 
@@ -115,7 +115,7 @@ function getPetMood() {
   return {
     moodClass: '',
     avatar: '🛸✨',
-    speech: `สวัสดี! ผมชื่อ ${name} (${t}°C) เช็กสเปกด้านล่าง แล้วกด 🌡️ Log Temp ป้อนอุณหภูมิให้ผมได้เลย!`,
+    speech: `สวัสดี! ผมชื่อ ${name} (${t}°C) เช็กสเปกด้านขวา แล้วกด 🌡️ Log Temp ป้อนอุณหภูมิให้ผมได้เลย!`,
   };
 }
 
@@ -123,16 +123,15 @@ function getPetMood() {
 function renderSparkline(logs) {
   if (!logs || logs.length < 2) return '';
 
-  // เรียงจากเก่า -> ใหม่ (ซ้ายไปขวา) เพื่อให้กราฟอ่านตามลำดับเวลา
   const ordered = [...logs].reverse();
   const temps = ordered.map((item) => Number(item.celsius));
   const min = Math.min(...temps);
   const max = Math.max(...temps);
   const range = max - min || 1;
 
-  const width = 440;
-  const height = 58;
-  const padX = 10;
+  const width = 560;
+  const height = 64;
+  const padX = 12;
   const padY = 10;
 
   const points = temps.map((val, idx) => {
@@ -150,7 +149,7 @@ function renderSparkline(logs) {
         <span>📈 แนวโน้มอุณหภูมิ (${temps.length} รายการในหน้านี้)</span>
         <span>Min: ${min}°C | Max: ${max}°C</span>
       </div>
-      <svg viewBox="0 0 ${width} ${height}" width="100%" height="58" preserveAspectRatio="none">
+      <svg viewBox="0 0 ${width} ${height}" width="100%" height="64" preserveAspectRatio="none">
         <polyline
           fill="none"
           stroke="${strokeColor}"
@@ -182,6 +181,20 @@ function formatDateTime(isoStr) {
     minute: '2-digit',
   });
 }
+
+function getCurrentTimeStr() {
+  return new Date().toLocaleTimeString('th-TH', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+}
+
+// อัปเดตนาฬิกาบนแถบเมนูโดยไม่รีเฟรชหน้าจอ (ป้องกันค่าที่กำลังพิมพ์ในช่อง Input หาย)
+setInterval(() => {
+  const clockEl = document.getElementById('osClock');
+  if (clockEl) clockEl.textContent = getCurrentTimeStr();
+}, 1000);
 
 // ดึงข้อมูล Log ตามหน้า (Pagination)
 async function fetchLogs(page = 1) {
@@ -276,13 +289,13 @@ async function submitTemperature(celsiusValue) {
   }
 }
 
-// วาดส่วนเนื้อหาตามแท็บที่เลือก
+// วาดส่วนเนื้อหาตามแท็บที่เลือกในหน้าต่างขวา
 function renderActivePanel() {
   if (state.activeTab === 'config') {
     const c = state.config || {};
     return `
       <div class="panel-title">
-        <span>🖥️ ข้อมูลจำเพาะโดรน (Config)</span>
+        <span>🖥️ ข้อมูลจำเพาะโดรน (Drone Configuration)</span>
       </div>
       <div class="config-grid">
         <div class="config-item">
@@ -294,7 +307,7 @@ function renderActivePanel() {
           <div class="config-value">${c.drone_name || '-'}</div>
         </div>
         <div class="config-item">
-          <div class="config-label">Light</div>
+          <div class="config-label">Light Status</div>
           <div class="config-value">${(c.light || '-').toUpperCase()}</div>
         </div>
         <div class="config-item">
@@ -308,7 +321,7 @@ function renderActivePanel() {
   if (state.activeTab === 'log') {
     return `
       <div class="panel-title">
-        <span>🌡️ Feed Temperature (°C)</span>
+        <span>🌡️ บันทึกอุณหภูมิโดรน (Feed Temperature °C)</span>
       </div>
       <form id="tempForm">
         <div class="form-group">
@@ -342,8 +355,8 @@ function renderActivePanel() {
   // แท็บ View Logs
   return `
     <div class="panel-title">
-      <span>📜 ประวัติอุณหภูมิ (View Logs)</span>
-      <span style="font-size:0.8rem; opacity:0.75;">หน้า ${state.page}</span>
+      <span>📜 ประวัติอุณหภูมิ (Temperature Logs)</span>
+      <span style="font-size:0.85rem; opacity:0.75;">หน้า ${state.page}</span>
     </div>
     ${renderSparkline(state.logs)}
     <div class="table-wrap">
@@ -360,7 +373,7 @@ function renderActivePanel() {
         <tbody>
           ${
             state.logs.length === 0
-              ? `<tr><td colspan="5" style="text-align:center; padding:16px;">ยังไม่มีประวัติข้อมูลในหน้านี้</td></tr>`
+              ? `<tr><td colspan="5" style="text-align:center; padding:18px;">ยังไม่มีประวัติข้อมูลในหน้านี้</td></tr>`
               : state.logs
                   .map(
                     (row) => `
@@ -390,7 +403,7 @@ function renderActivePanel() {
   `;
 }
 
-// Render หน้าจอทั้งหมดและผูก Event Listeners
+// Render หน้าจอ Desktop OS ทั้งหมด
 function render() {
   const app = document.getElementById('app');
   const pet = getPetMood();
@@ -400,53 +413,104 @@ function render() {
     state.latestTemp !== null ? `${state.latestTemp} °C` : '-- °C';
 
   app.innerHTML = `
-    <div class="device-shell ${state.isRadar ? 'radar-mode' : ''}">
-      <div class="shell-top">
-        <span class="os-badge">DRONE PET OS v2.5</span>
-        <div class="hardware-toggles">
+    <div class="os-desktop ${state.isRadar ? 'radar-mode' : ''}">
+      <!-- แถบเมนูบาร์ด้านบน -->
+      <header class="os-menubar">
+        <div class="menubar-left">
+          <span class="os-logo">🛸 DRONE PET OS v3.0</span>
+          <span>File</span>
+          <span>Telemetry</span>
+          <span>View</span>
+        </div>
+        <div class="menubar-right">
           <button id="toggleSoundBtn" class="hw-btn" title="เปิด/ปิดเสียง 8-Bit">
             ${state.isMuted ? '🔇 Muted' : '🔊 SFX'}
           </button>
           <button id="toggleRadarBtn" class="hw-btn" title="สลับโหมดเรดาร์กลางคืน">
-            ${state.isRadar ? '☀️ Day' : '📡 Radar'}
+            ${state.isRadar ? '☀️ Day Mode' : '📡 Radar Mode'}
           </button>
+          <span id="osClock" class="os-clock">${getCurrentTimeStr()}</span>
         </div>
-      </div>
+      </header>
 
-      <h1 class="device-title">SPANNER-GOTCHI</h1>
+      <!-- พื้นที่ทำงาน 2 หน้าต่างคู่กัน -->
+      <main class="desktop-workspace">
+        <!-- หน้าต่างซ้าย: จอแสดงสถานะน้อง Spanner -->
+        <section class="pc-window">
+          <div class="window-titlebar">
+            <span>SPANNER_MONITOR.EXE</span>
+            <div class="window-controls">
+              <span class="win-dot min"></span>
+              <span class="win-dot max"></span>
+              <span class="win-dot cls"></span>
+            </div>
+          </div>
+          <div class="window-body">
+            <div class="lcd-screen ${pet.moodClass}">
+              <div class="lcd-header">
+                <span>ID: #${state.config?.drone_id || DRONE_ID}</span>
+                <span class="pill-tag">LIGHT: ${lightStatus}</span>
+              </div>
 
-      <div class="lcd-screen ${pet.moodClass}">
-        <div class="lcd-header">
-          <span>ID: #${state.config?.drone_id || DRONE_ID}</span>
-          <span class="pill-tag">LIGHT: ${lightStatus}</span>
+              <div class="lcd-stage">
+                <div class="pet-avatar">${pet.avatar}</div>
+                <div class="speech-bubble">${pet.speech}</div>
+              </div>
+
+              <div class="lcd-footer">
+                <span>Condition: <strong>${conditionStatus}</strong></span>
+                <span>Temp: <strong>${tempDisplay}</strong></span>
+              </div>
+            </div>
+
+            <div class="monitor-meta">
+              <span>UNIT: ${(state.config?.drone_name || 'SPANNER').toUpperCase()}</span>
+              <span>LOC: ${(state.config?.country || 'THAILAND').toUpperCase()}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- หน้าต่างขวา: แผงควบคุมและตารางข้อมูล -->
+        <section class="pc-window">
+          <div class="window-titlebar alt">
+            <span>CONTROL_TERMINAL.APP — [${state.activeTab.toUpperCase()}]</span>
+            <div class="window-controls">
+              <span class="win-dot min"></span>
+              <span class="win-dot max"></span>
+              <span class="win-dot cls"></span>
+            </div>
+          </div>
+          <div class="window-body">
+            <nav class="nav-tabs">
+              <button class="tab-btn ${state.activeTab === 'config' ? 'active' : ''}" data-tab="config">
+                🖥️ View Config
+              </button>
+              <button class="tab-btn ${state.activeTab === 'log' ? 'active' : ''}" data-tab="log">
+                🌡️ Log Temp
+              </button>
+              <button class="tab-btn ${state.activeTab === 'history' ? 'active' : ''}" data-tab="history">
+                📜 View Logs
+              </button>
+            </nav>
+
+            <div class="panel-card">
+              ${renderActivePanel()}
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- แถบ Taskbar ด้านล่าง -->
+      <footer class="os-taskbar">
+        <div class="taskbar-apps">
+          <span class="start-pill">⊞ Start</span>
+          <span class="task-item">SPANNER_MONITOR.EXE</span>
+          <span class="task-item">CONTROL_TERMINAL.APP</span>
         </div>
-
-        <div class="lcd-stage">
-          <div class="pet-avatar">${pet.avatar}</div>
-          <div class="speech-bubble">${pet.speech}</div>
+        <div>
+          API LINK: <span class="status-online">● CONNECTED</span>
         </div>
-
-        <div class="lcd-footer">
-          <span>Condition: <strong>${conditionStatus}</strong></span>
-          <span>Temp: <strong>${tempDisplay}</strong></span>
-        </div>
-      </div>
-
-      <div class="nav-tabs">
-        <button class="tab-btn ${state.activeTab === 'config' ? 'active' : ''}" data-tab="config">
-          🖥️ View Config
-        </button>
-        <button class="tab-btn ${state.activeTab === 'log' ? 'active' : ''}" data-tab="log">
-          🌡️ Log Temp
-        </button>
-        <button class="tab-btn ${state.activeTab === 'history' ? 'active' : ''}" data-tab="history">
-          📜 View Logs
-        </button>
-      </div>
-
-      <div class="panel-card">
-        ${renderActivePanel()}
-      </div>
+      </footer>
     </div>
   `;
 

@@ -1,15 +1,17 @@
 :root {
-  --shell-bg: #ffd166;
-  --shell-border: #e09f3e;
-  --shell-shadow: #b5771c;
+  --desktop-bg: #1e3d59;
+  --desktop-grid: rgba(255, 255, 255, 0.05);
+  --win-bg: #f4f1de;
+  --win-border: #2b2d42;
+  --win-titlebar: #3d5a80;
+  --win-titlebar-alt: #e07a5f;
   --lcd-bg: #c8dbb9;
-  --lcd-border: #6b7d5c;
-  --lcd-text: #22301b;
-  --tab-bg: #f4a261;
+  --lcd-border: #5c6e4e;
+  --lcd-text: #1f2d18;
+  --tab-bg: #e9ecef;
   --tab-active: #2a9d8f;
   --btn-primary: #e76f51;
   --btn-primary-hover: #d65a3b;
-  --card-bg: #ffffff;
   --text-main: #2b2d42;
 }
 
@@ -22,107 +24,188 @@
 
 body {
   min-height: 100vh;
-  background: radial-gradient(circle at top, #232946 0%, #121629 100%);
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 24px 14px;
+  background-color: var(--desktop-bg);
+  background-image: linear-gradient(var(--desktop-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--desktop-grid) 1px, transparent 1px);
+  background-size: 32px 32px;
   color: var(--text-main);
+  display: flex;
+  flex-direction: column;
 }
 
-/* โครงเครื่อง Tamagotchi */
-.device-shell {
-  width: 100%;
-  max-width: 540px;
-  background: linear-gradient(180deg, #ffe08a 0%, var(--shell-bg) 100%);
-  border: 4px solid var(--shell-border);
-  border-radius: 36px;
-  padding: 20px 20px 26px;
-  box-shadow: 0 14px 0 var(--shell-shadow), 0 22px 40px rgba(0, 0, 0, 0.45);
-  transition: all 0.3s ease;
+/* โครงสร้างหลักของหน้าจอคอมพิวเตอร์ */
+.os-desktop {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: background 0.3s ease;
 }
 
-.device-shell.radar-mode {
-  background: linear-gradient(180deg, #1b262c 0%, #0f171e 100%);
-  border-color: #2e4049;
-  box-shadow: 0 14px 0 #070b0e, 0 22px 40px rgba(0, 0, 0, 0.7);
+.os-desktop.radar-mode {
+  background-color: #070d10;
+  background-image: linear-gradient(rgba(57, 255, 20, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(57, 255, 20, 0.07) 1px, transparent 1px);
+  background-size: 28px 28px;
 }
 
-/* แถบบนสุด + ปุ่มควบคุมเสียง/เรดาร์ */
-.shell-top {
+/* แถบเมนูบาร์ด้านบน (Top OS Bar) */
+.os-menubar {
+  background: #1b263b;
+  color: #f8f9fa;
+  border-bottom: 2px solid #0d1b2a;
+  padding: 6px 18px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
-.os-badge {
-  background: #2b2d42;
-  color: #ffd166;
-  font-size: 0.72rem;
+.os-desktop.radar-mode .os-menubar {
+  background: #0b1912;
+  border-bottom-color: #268c14;
+  color: #39ff14;
+}
+
+.menubar-left,
+.menubar-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.os-logo {
   font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 999px;
+  color: #ffd166;
   letter-spacing: 0.5px;
 }
 
-.hardware-toggles {
-  display: flex;
-  gap: 6px;
+.os-desktop.radar-mode .os-logo {
+  color: #39ff14;
 }
 
 .hw-btn {
-  background: rgba(43, 45, 66, 0.15);
-  border: 2px solid rgba(43, 45, 66, 0.25);
-  color: #2b2d42;
-  font-size: 0.75rem;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  font-size: 0.78rem;
   font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 999px;
+  padding: 3px 10px;
+  border-radius: 6px;
   cursor: pointer;
   transition: 0.15s;
 }
 
-.device-shell.radar-mode .hw-btn {
-  background: rgba(57, 255, 20, 0.1);
+.hw-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.os-desktop.radar-mode .hw-btn {
+  background: rgba(57, 255, 20, 0.12);
   border-color: #39ff14;
   color: #39ff14;
 }
 
-.hw-btn:hover {
-  transform: translateY(-1px);
+.os-clock {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 3px 9px;
+  border-radius: 5px;
 }
 
-.device-title {
-  text-align: center;
-  font-size: 1.65rem;
+/* พื้นที่ทำงานตรงกลาง (จัดวาง 2 หน้าต่างคู่กัน) */
+.desktop-workspace {
+  width: 100%;
+  max-width: 1120px;
+  margin: auto;
+  padding: 24px 20px;
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+@media (max-width: 880px) {
+  .desktop-workspace {
+    grid-template-columns: 1fr;
+    max-width: 600px;
+  }
+}
+
+/* กรอบหน้าต่างโปรแกรมสไตล์ Retro PC */
+.pc-window {
+  background: var(--win-bg);
+  border: 3px solid var(--win-border);
+  border-radius: 12px;
+  box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.os-desktop.radar-mode .pc-window {
+  background: #101a1f;
+  border-color: #2e8b57;
+  box-shadow: 0 0 20px rgba(57, 255, 20, 0.15);
+  color: #d8f3dc;
+}
+
+.window-titlebar {
+  background: var(--win-titlebar);
+  color: #ffffff;
+  padding: 8px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 3px solid var(--win-border);
+  font-size: 0.85rem;
   font-weight: 700;
-  letter-spacing: 2px;
-  color: #2b2d42;
-  margin-bottom: 12px;
-  text-shadow: 0 2px 0 rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.5px;
 }
 
-.device-shell.radar-mode .device-title {
+.window-titlebar.alt {
+  background: var(--win-titlebar-alt);
+}
+
+.os-desktop.radar-mode .window-titlebar {
+  background: #143622;
+  border-bottom-color: #2e8b57;
   color: #39ff14;
-  text-shadow: 0 0 10px rgba(57, 255, 20, 0.5);
 }
 
-/* หน้าจอ LCD หลัก */
+.window-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.win-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1.5px solid #1b263b;
+  display: inline-block;
+}
+
+.win-dot.min { background: #ffd166; }
+.win-dot.max { background: #06d6a0; }
+.win-dot.cls { background: #ef476f; }
+
+.window-body {
+  padding: 18px;
+}
+
+/* หน้าจอ LCD ภายในหน้าต่างซ้าย */
 .lcd-screen {
   background: var(--lcd-bg);
-  border: 4px solid var(--lcd-border);
-  border-radius: 18px;
-  padding: 14px 16px;
+  border: 3px solid var(--lcd-border);
+  border-radius: 10px;
+  padding: 14px;
   color: var(--lcd-text);
-  box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.15);
-  margin-bottom: 16px;
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.15);
   transition: all 0.35s ease;
-  position: relative;
-  overflow: hidden;
 }
 
-/* สีหน้าจอตามอุณหภูมิ */
 .lcd-screen.mood-cool {
   background: #cde4f2;
   border-color: #5c859e;
@@ -135,15 +218,13 @@ body {
   color: #42190b;
 }
 
-/* โหมดเรดาร์กลางคืน */
-.device-shell.radar-mode .lcd-screen {
-  background: radial-gradient(circle, #0e2918 0%, #06140b 100%);
+.os-desktop.radar-mode .lcd-screen {
+  background: #06140b;
   background-image: linear-gradient(rgba(57, 255, 20, 0.08) 1px, transparent 1px),
     linear-gradient(90deg, rgba(57, 255, 20, 0.08) 1px, transparent 1px);
-  background-size: 18px 18px;
+  background-size: 16px 16px;
   border-color: #268c14;
   color: #39ff14;
-  box-shadow: inset 0 0 18px rgba(57, 255, 20, 0.25);
 }
 
 .lcd-header,
@@ -158,25 +239,27 @@ body {
 .pill-tag {
   background: rgba(0, 0, 0, 0.1);
   padding: 2px 8px;
-  border-radius: 6px;
+  border-radius: 5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
 }
 
-.device-shell.radar-mode .pill-tag {
+.os-desktop.radar-mode .pill-tag {
   background: rgba(57, 255, 20, 0.15);
   border: 1px solid rgba(57, 255, 20, 0.4);
 }
 
 .lcd-stage {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 14px;
-  padding: 18px 6px;
-  min-height: 98px;
+  text-align: center;
+  gap: 12px;
+  padding: 22px 8px;
 }
 
 .pet-avatar {
-  font-size: 2.8rem;
+  font-size: 3.4rem;
   animation: floatPet 2.4s ease-in-out infinite;
   user-select: none;
 }
@@ -187,73 +270,103 @@ body {
 }
 
 .speech-bubble {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.88);
   color: #1f2937;
-  padding: 8px 14px;
-  border-radius: 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
   font-size: 0.9rem;
   font-weight: 600;
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
-  max-width: 310px;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
-.device-shell.radar-mode .speech-bubble {
-  background: rgba(6, 26, 13, 0.9);
+.os-desktop.radar-mode .speech-bubble {
+  background: rgba(6, 26, 13, 0.92);
   color: #39ff14;
   border: 1px solid #39ff14;
 }
 
-/* ปุ่มแท็บเมนู 3 ปุ่ม */
+.monitor-meta {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 2px dashed rgba(0, 0, 0, 0.15);
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: #555;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.os-desktop.radar-mode .monitor-meta {
+  border-top-color: rgba(57, 255, 20, 0.25);
+  color: #80ed99;
+}
+
+/* แถบแท็บเมนูในหน้าต่างขวา */
 .nav-tabs {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
   gap: 8px;
-  margin-bottom: 14px;
+  border-bottom: 2px solid #dee2e6;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.os-desktop.radar-mode .nav-tabs {
+  border-bottom-color: #264653;
 }
 
 .tab-btn {
   background: var(--tab-bg);
   color: #2b2d42;
-  border: none;
-  border-bottom: 4px solid #c97b3d;
-  border-radius: 12px;
-  padding: 10px 6px;
-  font-size: 0.88rem;
+  border: 2px solid #ced4da;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .tab-btn:hover {
-  filter: brightness(1.04);
+  background: #dee2e6;
 }
 
 .tab-btn.active {
   background: var(--tab-active);
   color: #ffffff;
-  border-bottom-color: #1d6f65;
-  transform: translateY(1px);
+  border-color: #1d6f65;
 }
 
-/* กล่องเนื้อหาด้านล่าง */
+.os-desktop.radar-mode .tab-btn {
+  background: #18262e;
+  color: #a8dadc;
+  border-color: #2a404d;
+}
+
+.os-desktop.radar-mode .tab-btn.active {
+  background: #1b4332;
+  color: #39ff14;
+  border-color: #39ff14;
+}
+
+/* เนื้อหาภายในหน้าต่างขวา */
 .panel-card {
-  background: var(--card-bg);
-  border-radius: 18px;
+  background: #ffffff;
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
   padding: 18px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.device-shell.radar-mode .panel-card {
-  background: #121c22;
-  color: #d8f3dc;
-  border: 1px solid #264653;
+.os-desktop.radar-mode .panel-card {
+  background: #0d161b;
+  border-color: #264653;
 }
 
 .panel-title {
   font-size: 1.15rem;
   font-weight: 700;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -263,44 +376,44 @@ body {
 .config-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: 12px;
 }
 
 .config-item {
   background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 12px;
-  padding: 12px;
+  border: 1.5px solid #dee2e6;
+  border-radius: 8px;
+  padding: 14px;
 }
 
-.device-shell.radar-mode .config-item {
-  background: #18262e;
+.os-desktop.radar-mode .config-item {
+  background: #142229;
   border-color: #2a404d;
 }
 
 .config-label {
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   color: #6c757d;
   margin-bottom: 4px;
 }
 
-.device-shell.radar-mode .config-label {
+.os-desktop.radar-mode .config-label {
   color: #8ecae6;
 }
 
 .config-value {
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   font-weight: 700;
 }
 
-/* ฟอร์มบันทึกอุณหภูมิ + ปุ่มลัด */
+/* ฟอร์มบันทึกอุณหภูมิ */
 .form-group {
   margin-bottom: 12px;
 }
 
 .form-label {
   display: block;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   font-weight: 600;
   margin-bottom: 6px;
 }
@@ -311,47 +424,45 @@ body {
   font-size: 1.1rem;
   font-weight: 700;
   border: 2px solid #ced4da;
-  border-radius: 12px;
+  border-radius: 8px;
   outline: none;
-  transition: border-color 0.2s;
 }
 
 .temp-input:focus {
   border-color: var(--tab-active);
 }
 
-.device-shell.radar-mode .temp-input {
-  background: #0d151a;
+.os-desktop.radar-mode .temp-input {
+  background: #080f12;
   color: #39ff14;
   border-color: #2a9d8f;
 }
 
 .preset-row {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   margin-bottom: 14px;
   flex-wrap: wrap;
 }
 
 .preset-btn {
   flex: 1;
-  min-width: 90px;
+  min-width: 100px;
   background: #f1f3f5;
-  border: 1px solid #dee2e6;
-  border-radius: 10px;
-  padding: 7px 8px;
-  font-size: 0.82rem;
+  border: 1.5px solid #ced4da;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: 0.15s;
 }
 
 .preset-btn:hover {
   background: #e2e6ea;
 }
 
-.device-shell.radar-mode .preset-btn {
-  background: #1b2a33;
+.os-desktop.radar-mode .preset-btn {
+  background: #18262e;
   color: #d8f3dc;
   border-color: #2f4858;
 }
@@ -362,12 +473,11 @@ body {
   color: #ffffff;
   border: none;
   border-bottom: 4px solid #b5462a;
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 12px;
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
-  transition: 0.15s;
 }
 
 .submit-btn:hover:not(:disabled) {
@@ -380,79 +490,74 @@ body {
 }
 
 .feedback-msg {
-  margin-top: 10px;
-  font-size: 0.88rem;
+  margin-top: 12px;
+  font-size: 0.9rem;
   font-weight: 600;
   text-align: center;
 }
 
-.feedback-msg.success {
-  color: #2a9d8f;
-}
-
-.feedback-msg.error {
-  color: #e63946;
-}
+.feedback-msg.success { color: #2a9d8f; }
+.feedback-msg.error { color: #e63946; }
 
 /* กราฟเส้น Sparkline */
 .sparkline-box {
   background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 12px;
-  padding: 10px 12px;
-  margin-bottom: 12px;
+  border: 1.5px solid #dee2e6;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
 }
 
-.device-shell.radar-mode .sparkline-box {
-  background: #0d171c;
+.os-desktop.radar-mode .sparkline-box {
+  background: #132026;
   border-color: #264653;
 }
 
 .sparkline-header {
   display: flex;
   justify-content: space-between;
-  font-size: 0.76rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: #6c757d;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
-.device-shell.radar-mode .sparkline-header {
+.os-desktop.radar-mode .sparkline-header {
   color: #39ff14;
 }
 
-/* ตาราง View Logs 5 คอลัมน์ */
+/* ตาราง View Logs */
 .table-wrap {
   overflow-x: auto;
-  border-radius: 10px;
-  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  border: 1.5px solid #dee2e6;
 }
 
-.device-shell.radar-mode .table-wrap {
+.os-desktop.radar-mode .table-wrap {
   border-color: #264653;
 }
 
 .logs-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8rem;
+  font-size: 0.86rem;
   text-align: left;
 }
 
 .logs-table th {
   background: #2b2d42;
   color: #ffffff;
-  padding: 8px 10px;
+  padding: 10px 12px;
   white-space: nowrap;
 }
 
 .logs-table td {
-  padding: 8px 10px;
+  padding: 9px 12px;
   border-bottom: 1px solid #edf2f4;
   white-space: nowrap;
 }
 
-.device-shell.radar-mode .logs-table td {
+.os-desktop.radar-mode .logs-table td {
   border-bottom-color: #1f333d;
 }
 
@@ -464,8 +569,8 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 12px;
-  font-size: 0.85rem;
+  margin-top: 14px;
+  font-size: 0.86rem;
   font-weight: 600;
 }
 
@@ -473,9 +578,9 @@ body {
   background: #2b2d42;
   color: #ffffff;
   border: none;
-  border-radius: 8px;
-  padding: 6px 12px;
-  font-size: 0.82rem;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
 }
@@ -483,4 +588,49 @@ body {
 .page-btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
+}
+
+/* แถบ Taskbar ด้านล่าง */
+.os-taskbar {
+  background: #1b263b;
+  color: #e0e1dd;
+  border-top: 2px solid #0d1b2a;
+  padding: 6px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.os-desktop.radar-mode .os-taskbar {
+  background: #0b1912;
+  border-top-color: #268c14;
+  color: #39ff14;
+}
+
+.taskbar-apps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.start-pill {
+  background: #2a9d8f;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 5px;
+}
+
+.task-item {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 3px 10px;
+  border-radius: 5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+}
+
+.status-online {
+  color: #06d6a0;
+  font-weight: 700;
 }
