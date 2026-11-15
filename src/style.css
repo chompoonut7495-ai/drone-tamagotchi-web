@@ -40,6 +40,7 @@ body {
   flex-direction: column;
   justify-content: space-between;
   transition: background 0.3s ease;
+  position: relative;
 }
 
 .os-desktop.radar-mode {
@@ -54,12 +55,14 @@ body {
   background: #1b263b;
   color: #f8f9fa;
   border-bottom: 2px solid #0d1b2a;
-  padding: 6px 18px;
+  padding: 5px 18px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 0.85rem;
   font-weight: 600;
+  position: relative;
+  z-index: 50;
 }
 
 .os-desktop.radar-mode .os-menubar {
@@ -72,17 +75,109 @@ body {
 .menubar-right {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 8px;
 }
 
 .os-logo {
   font-weight: 700;
   color: #ffd166;
   letter-spacing: 0.5px;
+  margin-right: 6px;
 }
 
 .os-desktop.radar-mode .os-logo {
   color: #39ff14;
+}
+
+/* ปุ่มเมนู Dropdown ด้านบน */
+.menu-wrapper {
+  position: relative;
+}
+
+.menu-trigger {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #f8f9fa;
+  font-size: 0.84rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.menu-trigger:hover,
+.menu-trigger.active {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.os-desktop.radar-mode .menu-trigger {
+  color: #39ff14;
+}
+
+.os-desktop.radar-mode .menu-trigger:hover,
+.os-desktop.radar-mode .menu-trigger.active {
+  background: rgba(57, 255, 20, 0.15);
+  border-color: #39ff14;
+}
+
+.dropdown-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 210px;
+  background: #ffffff;
+  color: #1b263b;
+  border: 2px solid #1b263b;
+  border-radius: 8px;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  z-index: 100;
+}
+
+.os-desktop.radar-mode .dropdown-panel {
+  background: #0d1a14;
+  color: #39ff14;
+  border-color: #39ff14;
+}
+
+.dropdown-item {
+  background: transparent;
+  border: none;
+  text-align: left;
+  padding: 7px 10px;
+  border-radius: 5px;
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dropdown-item:hover {
+  background: #2a9d8f;
+  color: #ffffff;
+}
+
+.os-desktop.radar-mode .dropdown-item:hover {
+  background: #1b4332;
+  color: #39ff14;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: #dee2e6;
+  margin: 3px 0;
+}
+
+.os-desktop.radar-mode .dropdown-divider {
+  background: #264653;
 }
 
 .hw-btn {
@@ -127,6 +222,21 @@ body {
   align-items: start;
 }
 
+.desktop-workspace.single-win {
+  grid-template-columns: 1fr;
+  max-width: 680px;
+}
+
+.empty-desktop-msg {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(0, 0, 0, 0.25);
+  border: 2px dashed rgba(255, 255, 255, 0.25);
+  border-radius: 14px;
+  padding: 36px 20px;
+  font-size: 0.95rem;
+}
+
 @media (max-width: 880px) {
   .desktop-workspace {
     grid-template-columns: 1fr;
@@ -141,7 +251,7 @@ body {
   border-radius: 12px;
   box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.35);
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
 }
 
 .os-desktop.radar-mode .pc-window {
@@ -180,11 +290,12 @@ body {
 }
 
 .win-dot {
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
   border-radius: 3px;
   border: 1.5px solid #1b263b;
   display: inline-block;
+  cursor: pointer;
 }
 
 .win-dot.min { background: #ffd166; }
@@ -600,6 +711,8 @@ body {
   justify-content: space-between;
   align-items: center;
   font-size: 0.8rem;
+  position: relative;
+  z-index: 50;
 }
 
 .os-desktop.radar-mode .os-taskbar {
@@ -612,22 +725,94 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  position: relative;
+  flex-wrap: wrap;
 }
 
-.start-pill {
+.start-btn {
   background: #2a9d8f;
   color: #ffffff;
+  border: 1.5px solid #1d6f65;
   font-weight: 700;
-  padding: 3px 10px;
+  font-size: 0.8rem;
+  padding: 4px 12px;
   border-radius: 5px;
+  cursor: pointer;
+  transition: 0.15s;
 }
 
-.task-item {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 3px 10px;
+.start-btn:hover,
+.start-btn.active {
+  background: #21867a;
+}
+
+.task-btn {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 4px 11px;
   border-radius: 5px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.task-btn.minimized {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.55);
+  border-style: dashed;
+}
+
+.os-desktop.radar-mode .task-btn {
+  background: rgba(57, 255, 20, 0.18);
+  border-color: #39ff14;
+  color: #39ff14;
+}
+
+.os-desktop.radar-mode .task-btn.minimized {
+  background: transparent;
+  opacity: 0.55;
+}
+
+/* เมนู Start เด้งขึ้นด้านบน */
+.start-menu-panel {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 0;
+  width: 240px;
+  background: #ffffff;
+  color: #1b263b;
+  border: 2px solid #1b263b;
+  border-radius: 10px;
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.4);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 100;
+}
+
+.os-desktop.radar-mode .start-menu-panel {
+  background: #0d1a14;
+  color: #39ff14;
+  border-color: #39ff14;
+}
+
+.start-header {
+  background: #1b263b;
+  color: #ffd166;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.os-desktop.radar-mode .start-header {
+  background: #143622;
+  color: #39ff14;
 }
 
 .status-online {

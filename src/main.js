@@ -19,7 +19,22 @@ const state = {
   feedback: null, // { type: 'success' | 'error', text: string }
   isRadar: false,
   isMuted: false,
+  openMenu: null, // null | 'file' | 'telemetry' | 'view' | 'start'
+  showMonitorWin: true,
+  showTerminalWin: true,
 };
+
+// ปิดเมนู Dropdown เมื่อคลิกพื้นที่ว่างข้างนอก
+document.addEventListener('click', (e) => {
+  if (
+    state.openMenu &&
+    !e.target.closest('.menu-wrapper') &&
+    !e.target.closest('.start-wrapper')
+  ) {
+    state.openMenu = null;
+    render();
+  }
+});
 
 // ระบบสังเคราะห์เสียง 8-Bit
 let audioCtx = null;
@@ -74,6 +89,36 @@ function playBeep(type = 'click') {
   }
 }
 
+// ดาวน์โหลดประวัติอุณหภูมิเป็นไฟล์ CSV
+function exportLogsCSV() {
+  if (!state.logs || state.logs.length === 0) {
+    playBeep('error');
+    state.activeTab = 'history';
+    state.openMenu = null;
+    render();
+    return;
+  }
+  const headers = ['Created', 'Country', 'Drone ID', 'Drone Name', 'Celsius'];
+  const rows = state.logs.map((r) => [
+    `"${r.created}"`,
+    `"${r.country}"`,
+    r.drone_id,
+    `"${r.drone_name}"`,
+    r.celsius,
+  ]);
+  const csvContent =
+    'data:text/csv;charset=utf-8,' +
+    [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', `drone_${DRONE_ID}_logs_page${state.page}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  playBeep('success');
+}
+
 // คำนวณอารมณ์และคำพูดของ Spanner ตามอุณหภูมิล่าสุด
 function getPetMood() {
   const name = state.config?.drone_name || 'Spanner';
@@ -119,7 +164,7 @@ function getPetMood() {
   };
 }
 
-// วาดกราฟเส้น SVG Sparkline จากข้อมูล 12 รายการล่าสุด
+// วาดกราฟเส้น SVG Sparkline
 function renderSparkline(logs) {
   if (!logs || logs.length < 2) return '';
 
@@ -190,13 +235,12 @@ function getCurrentTimeStr() {
   });
 }
 
-// อัปเดตนาฬิกาบนแถบเมนูโดยไม่รีเฟรชหน้าจอ (ป้องกันค่าที่กำลังพิมพ์ในช่อง Input หาย)
 setInterval(() => {
   const clockEl = document.getElementById('osClock');
   if (clockEl) clockEl.textContent = getCurrentTimeStr();
 }, 1000);
 
-// ดึงข้อมูล Log ตามหน้า (Pagination)
+// ดึงข้อมูล Log ตามหน้า
 async function fetchLogs(page = 1) {
   try {
     const res = await fetch(`${API_URL}/logs/${DRONE_ID}?page=${page}`);
@@ -212,8 +256,11 @@ async function fetchLogs(page = 1) {
   }
 }
 
-// โหลดข้อมูลเริ่มต้นทั้งหมดเมื่อเปิดเว็บ
+// โหลดข้อมูลเริ่มต้น
 async function initApp() {
+  state.isLoading = true;
+  render();
+
   const wakeTimer = setTimeout(() => {
     if (state.isLoading) {
       state.isWakingUp = true;
@@ -240,7 +287,7 @@ async function initApp() {
   }
 }
 
-// ส่งข้อมูลบันทึกอุณหภูมิ (POST /logs)
+// ส่งข้อมูลบันทึกอุณหภูมิ
 async function submitTemperature(celsiusValue) {
   const celsius = Number(celsiusValue);
   if (celsiusValue === '' || Number.isNaN(celsius)) {
@@ -289,7 +336,6 @@ async function submitTemperature(celsiusValue) {
   }
 }
 
-// วาดส่วนเนื้อหาตามแท็บที่เลือกในหน้าต่างขวา
 function renderActivePanel() {
   if (state.activeTab === 'config') {
     const c = state.config || {};
@@ -352,7 +398,6 @@ function renderActivePanel() {
     `;
   }
 
-  // แท็บ View Logs
   return `
     <div class="panel-title">
       <span>📜 ประวัติอุณหภูมิ (Temperature Logs)</span>
@@ -412,16 +457,77 @@ function render() {
   const tempDisplay =
     state.latestTemp !== null ? `${state.latestTemp} °C` : '-- °C';
 
+  const visibleCount =
+    (state.showMonitorWin ? 1 : 0) + (state.showTerminalWin ? 1 : 0);
+
   app.innerHTML = `
     <div class="os-desktop ${state.isRadar ? 'radar-mode' : ''}">
-      <!-- แถบเมนูบาร์ด้านบน -->
+      <!-- แถบเมนูบาร์ด้านบน (กดเปิดเมนูได้จริงทุกปุ่ม) -->
       <header class="os-menubar">
         <div class="menubar-left">
           <span class="os-logo">🛸 DRONE PET OS v3.0</span>
-          <span>File</span>
-          <span>Telemetry</span>
-          <span>View</span>
+
+          <!-- เมนู File -->
+          <div class="menu-wrapper">
+            <button class="menu-trigger ${state.openMenu === 'file' ? 'active' : ''}" data-menu="file">
+              File
+            </button>
+            ${
+              state.openMenu === 'file'
+                ? `
+              <div class="dropdown-panel">
+                <button class="dropdown-item" data-action="refresh">🔄 รีเฟรชข้อมูล API</button>
+                <button class="dropdown-item" data-action="exportCsv">📥 ดาวน์โหลด Logs (.CSV)</button>
+              </div>
+            `
+                : ''
+            }
+          </div>
+
+          <!-- เมนู Telemetry -->
+          <div class="menu-wrapper">
+            <button class="menu-trigger ${state.openMenu === 'telemetry' ? 'active' : ''}" data-menu="telemetry">
+              Telemetry
+            </button>
+            ${
+              state.openMenu === 'telemetry'
+                ? `
+              <div class="dropdown-panel">
+                <button class="dropdown-item" data-action="tab-config">🖥️ View Config</button>
+                <button class="dropdown-item" data-action="tab-log">🌡️ Log Temp</button>
+                <button class="dropdown-item" data-action="tab-history">📜 View Logs</button>
+              </div>
+            `
+                : ''
+            }
+          </div>
+
+          <!-- เมนู View -->
+          <div class="menu-wrapper">
+            <button class="menu-trigger ${state.openMenu === 'view' ? 'active' : ''}" data-menu="view">
+              View
+            </button>
+            ${
+              state.openMenu === 'view'
+                ? `
+              <div class="dropdown-panel">
+                <button class="dropdown-item" data-action="toggleRadar">
+                  <span>📡 Radar Mode</span>
+                  <span>${state.isRadar ? 'ON' : 'OFF'}</span>
+                </button>
+                <button class="dropdown-item" data-action="toggleSound">
+                  <span>🔊 8-Bit SFX</span>
+                  <span>${state.isMuted ? 'OFF' : 'ON'}</span>
+                </button>
+                <div class="dropdown-divider"></div>
+                <button class="dropdown-item" data-action="restoreAll">🪟 เปิดหน้าต่างทั้งหมด</button>
+              </div>
+            `
+                : ''
+            }
+          </div>
         </div>
+
         <div class="menubar-right">
           <button id="toggleSoundBtn" class="hw-btn" title="เปิด/ปิดเสียง 8-Bit">
             ${state.isMuted ? '🔇 Muted' : '🔊 SFX'}
@@ -433,79 +539,122 @@ function render() {
         </div>
       </header>
 
-      <!-- พื้นที่ทำงาน 2 หน้าต่างคู่กัน -->
-      <main class="desktop-workspace">
-        <!-- หน้าต่างซ้าย: จอแสดงสถานะน้อง Spanner -->
-        <section class="pc-window">
-          <div class="window-titlebar">
-            <span>SPANNER_MONITOR.EXE</span>
-            <div class="window-controls">
-              <span class="win-dot min"></span>
-              <span class="win-dot max"></span>
-              <span class="win-dot cls"></span>
-            </div>
-          </div>
-          <div class="window-body">
-            <div class="lcd-screen ${pet.moodClass}">
-              <div class="lcd-header">
-                <span>ID: #${state.config?.drone_id || DRONE_ID}</span>
-                <span class="pill-tag">LIGHT: ${lightStatus}</span>
-              </div>
+      <!-- พื้นที่ทำงานตรงกลาง -->
+      <main class="desktop-workspace ${visibleCount === 1 ? 'single-win' : ''}">
+        ${
+          visibleCount === 0
+            ? `<div class="empty-desktop-msg">หน้าต่างโปรแกรมถูกย่อไว้ทั้งหมด — กดที่ชื่อโปรแกรมบนแถบ Taskbar ด้านล่างเพื่อเปิดกลับมาครับ</div>`
+            : ''
+        }
 
-              <div class="lcd-stage">
-                <div class="pet-avatar">${pet.avatar}</div>
-                <div class="speech-bubble">${pet.speech}</div>
-              </div>
-
-              <div class="lcd-footer">
-                <span>Condition: <strong>${conditionStatus}</strong></span>
-                <span>Temp: <strong>${tempDisplay}</strong></span>
+        <!-- หน้าต่างซ้าย: SPANNER_MONITOR.EXE -->
+        ${
+          state.showMonitorWin
+            ? `
+          <section class="pc-window">
+            <div class="window-titlebar">
+              <span>SPANNER_MONITOR.EXE</span>
+              <div class="window-controls">
+                <span class="win-dot min" data-win="monitor" title="ย่อหน้าต่าง"></span>
+                <span class="win-dot max" data-action="restoreAll" title="แสดงคู่"></span>
+                <span class="win-dot cls" data-win="monitor" title="ซ่อนหน้าต่าง"></span>
               </div>
             </div>
+            <div class="window-body">
+              <div class="lcd-screen ${pet.moodClass}">
+                <div class="lcd-header">
+                  <span>ID: #${state.config?.drone_id || DRONE_ID}</span>
+                  <span class="pill-tag">LIGHT: ${lightStatus}</span>
+                </div>
 
-            <div class="monitor-meta">
-              <span>UNIT: ${(state.config?.drone_name || 'SPANNER').toUpperCase()}</span>
-              <span>LOC: ${(state.config?.country || 'THAILAND').toUpperCase()}</span>
-            </div>
-          </div>
-        </section>
+                <div class="lcd-stage">
+                  <div class="pet-avatar">${pet.avatar}</div>
+                  <div class="speech-bubble">${pet.speech}</div>
+                </div>
 
-        <!-- หน้าต่างขวา: แผงควบคุมและตารางข้อมูล -->
-        <section class="pc-window">
-          <div class="window-titlebar alt">
-            <span>CONTROL_TERMINAL.APP — [${state.activeTab.toUpperCase()}]</span>
-            <div class="window-controls">
-              <span class="win-dot min"></span>
-              <span class="win-dot max"></span>
-              <span class="win-dot cls"></span>
-            </div>
-          </div>
-          <div class="window-body">
-            <nav class="nav-tabs">
-              <button class="tab-btn ${state.activeTab === 'config' ? 'active' : ''}" data-tab="config">
-                🖥️ View Config
-              </button>
-              <button class="tab-btn ${state.activeTab === 'log' ? 'active' : ''}" data-tab="log">
-                🌡️ Log Temp
-              </button>
-              <button class="tab-btn ${state.activeTab === 'history' ? 'active' : ''}" data-tab="history">
-                📜 View Logs
-              </button>
-            </nav>
+                <div class="lcd-footer">
+                  <span>Condition: <strong>${conditionStatus}</strong></span>
+                  <span>Temp: <strong>${tempDisplay}</strong></span>
+                </div>
+              </div>
 
-            <div class="panel-card">
-              ${renderActivePanel()}
+              <div class="monitor-meta">
+                <span>UNIT: ${(state.config?.drone_name || 'SPANNER').toUpperCase()}</span>
+                <span>LOC: ${(state.config?.country || 'THAILAND').toUpperCase()}</span>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        `
+            : ''
+        }
+
+        <!-- หน้าต่างขวา: CONTROL_TERMINAL.APP -->
+        ${
+          state.showTerminalWin
+            ? `
+          <section class="pc-window">
+            <div class="window-titlebar alt">
+              <span>CONTROL_TERMINAL.APP — [${state.activeTab.toUpperCase()}]</span>
+              <div class="window-controls">
+                <span class="win-dot min" data-win="terminal" title="ย่อหน้าต่าง"></span>
+                <span class="win-dot max" data-action="restoreAll" title="แสดงคู่"></span>
+                <span class="win-dot cls" data-win="terminal" title="ซ่อนหน้าต่าง"></span>
+              </div>
+            </div>
+            <div class="window-body">
+              <nav class="nav-tabs">
+                <button class="tab-btn ${state.activeTab === 'config' ? 'active' : ''}" data-tab="config">
+                  🖥️ View Config
+                </button>
+                <button class="tab-btn ${state.activeTab === 'log' ? 'active' : ''}" data-tab="log">
+                  🌡️ Log Temp
+                </button>
+                <button class="tab-btn ${state.activeTab === 'history' ? 'active' : ''}" data-tab="history">
+                  📜 View Logs
+                </button>
+              </nav>
+
+              <div class="panel-card">
+                ${renderActivePanel()}
+              </div>
+            </div>
+          </section>
+        `
+            : ''
+        }
       </main>
 
-      <!-- แถบ Taskbar ด้านล่าง -->
+      <!-- แถบ Taskbar ด้านล่าง (กดเปิด Start และย่อ/ขยายหน้าต่างได้จริง) -->
       <footer class="os-taskbar">
         <div class="taskbar-apps">
-          <span class="start-pill">⊞ Start</span>
-          <span class="task-item">SPANNER_MONITOR.EXE</span>
-          <span class="task-item">CONTROL_TERMINAL.APP</span>
+          <div class="start-wrapper" style="position: relative;">
+            <button id="startBtn" class="start-btn ${state.openMenu === 'start' ? 'active' : ''}">
+              ⊞ Start
+            </button>
+            ${
+              state.openMenu === 'start'
+                ? `
+              <div class="start-menu-panel">
+                <div class="start-header">🛸 SPANNER OS — ID #${DRONE_ID}</div>
+                <button class="dropdown-item" data-action="tab-config">🖥️ View Config</button>
+                <button class="dropdown-item" data-action="tab-log">🌡️ Log Temperature</button>
+                <button class="dropdown-item" data-action="tab-history">📜 View Logs</button>
+                <div class="dropdown-divider"></div>
+                <button class="dropdown-item" data-action="refresh">🔄 Sync API Data</button>
+                <button class="dropdown-item" data-action="restoreAll">🪟 Show All Windows</button>
+              </div>
+            `
+                : ''
+            }
+          </div>
+
+          <button id="taskMonitorBtn" class="task-btn ${state.showMonitorWin ? '' : 'minimized'}">
+            ${state.showMonitorWin ? '🟢' : '⚪'} SPANNER_MONITOR.EXE
+          </button>
+
+          <button id="taskTerminalBtn" class="task-btn ${state.showTerminalWin ? '' : 'minimized'}">
+            ${state.showTerminalWin ? '🟢' : '⚪'} CONTROL_TERMINAL.APP
+          </button>
         </div>
         <div>
           API LINK: <span class="status-online">● CONNECTED</span>
@@ -514,21 +663,100 @@ function render() {
     </div>
   `;
 
-  // ผูก Event ปุ่มเปิด/ปิดเสียง
+  // เปิด/ปิดเมนู Dropdown ด้านบน
+  document.querySelectorAll('.menu-trigger').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      playBeep('click');
+      const target = btn.dataset.menu;
+      state.openMenu = state.openMenu === target ? null : target;
+      render();
+    });
+  });
+
+  // เปิด/ปิดเมนู Start ด้านล่าง
+  document.getElementById('startBtn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    playBeep('click');
+    state.openMenu = state.openMenu === 'start' ? null : 'start';
+    render();
+  });
+
+  // จัดการคำสั่งจากเมนู Dropdown และ Start Menu
+  document.querySelectorAll('[data-action]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const act = btn.dataset.action;
+      state.openMenu = null;
+      playBeep('click');
+
+      if (act === 'refresh') {
+        await initApp();
+        return;
+      }
+      if (act === 'exportCsv') {
+        exportLogsCSV();
+        render();
+        return;
+      }
+      if (act === 'tab-config') {
+        state.showTerminalWin = true;
+        state.activeTab = 'config';
+      } else if (act === 'tab-log') {
+        state.showTerminalWin = true;
+        state.activeTab = 'log';
+      } else if (act === 'tab-history') {
+        state.showTerminalWin = true;
+        state.activeTab = 'history';
+        await fetchLogs(state.page);
+      } else if (act === 'toggleRadar') {
+        state.isRadar = !state.isRadar;
+      } else if (act === 'toggleSound') {
+        state.isMuted = !state.isMuted;
+      } else if (act === 'restoreAll') {
+        state.showMonitorWin = true;
+        state.showTerminalWin = true;
+      }
+      render();
+    });
+  });
+
+  // ย่อ/ขยายหน้าต่างจากปุ่มบน Taskbar
+  document.getElementById('taskMonitorBtn')?.addEventListener('click', () => {
+    playBeep('click');
+    state.showMonitorWin = !state.showMonitorWin;
+    render();
+  });
+
+  document.getElementById('taskTerminalBtn')?.addEventListener('click', () => {
+    playBeep('click');
+    state.showTerminalWin = !state.showTerminalWin;
+    render();
+  });
+
+  // ย่อ/ปิดหน้าต่างจากจุดสีบนหัวหน้าต่าง
+  document.querySelectorAll('[data-win]').forEach((dot) => {
+    dot.addEventListener('click', () => {
+      playBeep('click');
+      if (dot.dataset.win === 'monitor') state.showMonitorWin = false;
+      if (dot.dataset.win === 'terminal') state.showTerminalWin = false;
+      render();
+    });
+  });
+
+  // ปุ่มเสียงและเรดาร์มุมขวาบน
   document.getElementById('toggleSoundBtn')?.addEventListener('click', () => {
     state.isMuted = !state.isMuted;
     if (!state.isMuted) playBeep('click');
     render();
   });
 
-  // ผูก Event ปุ่มสลับโหมดเรดาร์กลางคืน
   document.getElementById('toggleRadarBtn')?.addEventListener('click', () => {
     state.isRadar = !state.isRadar;
     playBeep('click');
     render();
   });
 
-  // ผูก Event ปุ่มแท็บทั้ง 3
+  // แท็บทั้ง 3 ในหน้าต่างขวา
   document.querySelectorAll('.tab-btn').forEach((btn) => {
     btn.addEventListener('click', async () => {
       playBeep('click');
@@ -542,7 +770,7 @@ function render() {
     });
   });
 
-  // ผูก Event ฟอร์มบันทึกอุณหภูมิและปุ่มลัด
+  // ฟอร์มบันทึกอุณหภูมิและปุ่มลัด
   const form = document.getElementById('tempForm');
   if (form) {
     document.querySelectorAll('.preset-btn').forEach((btn) => {
@@ -560,7 +788,7 @@ function render() {
     });
   }
 
-  // ผูก Event ปุ่มเปลี่ยนหน้า Pagination
+  // ปุ่มเปลี่ยนหน้า Pagination
   document.getElementById('prevPageBtn')?.addEventListener('click', async () => {
     if (state.page > 1) {
       playBeep('click');
