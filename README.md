@@ -27,3 +27,13 @@
 1. ติดตั้ง Dependencies:
    ```bash
    npm install
+   ```
+2. สร้างไฟล์ `.env` ที่โฟลเดอร์หลักของโปรเจกต์ และระบุค่า Environment Variables:
+   ```env
+   VITE_API_URL=[https://drone-api-spanner.onrender.com](https://drone-api-spanner.onrender.com)
+   VITE_DRONE_ID=67010177
+   ```
+3. รันเซิร์ฟเวอร์พัฒนา:
+   ```bash
+   npm run dev
+   ```
